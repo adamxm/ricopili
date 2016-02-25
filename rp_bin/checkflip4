@@ -1,7 +1,12 @@
 #!/usr/bin/perl
 use strict;
 
-
+###########################################################################################################
+# 2/25/16 
+# Updates from Adam Maihofer amaihofer@ucsd.edu:
+# For the determination of allele frequency, I add in the option to subset the file to a specific set of subjects
+# This allows one to align the strand of the data using the largest homogenous ethnic group
+###########################################################################################################
 
 ###########################################################################################################
 #
@@ -92,7 +97,8 @@ version: $version
   --help              print this message and exit
 
   --dbcol INT,INT,INT,INT snp-col,a1-col,a2-col,Freq_a1_col in dbsnp-file: default: $dscol,$da1col,$da2col,$dfcol 
-
+ 
+  --keep              Use only this subset of subjects, in the form of a 2 column file of FID and IID
 #chr10_100002841_I	758	I2	0.065	D	0.935	48	10	100002841
 #0                         1      2        3      4       
 
@@ -135,6 +141,7 @@ GetOptions(
     "dbcol=s"=> \my $dcolstr,
 #    "replace"=> \my $replace,
     "subdir=s"=> \$subdir,
+    "keep=s"=> \$keep_plink,
     );
 
 die "$usage\n" if ($help);
@@ -396,7 +403,15 @@ if ($pos_tr) {
 ####### create freq-file
 unless (-e $frq_file) {
     print "creating frq-file\n";
-    &mysystem ("$p2loc/plink --memory 2000 --bfile $bfile --out $bfile --freq --nonfounders> /dev/null");
+    if($keep_plink)
+    {
+    	if(-e $keep_plink}
+    	{
+    		&mysystem ("$p2loc/plink --memory 2000 --bfile $bfile --keep $keep_plink --out $bfile --freq --nonfounders> /dev/null");
+    	} else  print "Subset of subjects requested, but subset list file does not exist! \n";
+    } else {
+    	&mysystem ("$p2loc/plink --memory 2000 --bfile $bfile --out $bfile --freq --nonfounders> /dev/null");
+    }
 }
 
 
