@@ -126,6 +126,7 @@ my @ref_coll = ();
 
 my $fth_th = 0.15;
 
+my $keep_plink = "";
 
 use Sys::Hostname;
 my $host = hostname;
@@ -302,7 +303,7 @@ version: $version
   --fth FLOAT         frequency-diff to exclude SNPs, default $fth_th
                                 for checkflip (compare to reference)
 
-
+  --keep              Keep only a certain subset of subjects for freq check
 
  
 #### post - imputation cleaning
@@ -484,7 +485,7 @@ GetOptions(
 
     "popname=s"=> \$popname,
     "refiex=s"=> \my $refiex_file,
-
+    "keep=s"=> \$keep_plink,
     );
 
 
@@ -1752,7 +1753,16 @@ my $chefli_fini = 0;
 	    if (-e $locref) {
 		print "locref $locref is existing! safes some time\n";
 		unless (exists $bimfli_array{$accfli}) {
-		    my $systmp = "$checkflip_script --dbcol 0,3,4,5 --fth $fth_th --sfh $sec_freq --info $rootdir/$impute_dir/$locref $bfile.hg19.ch.bim" ;
+		    if($keep_plink)
+    		    {
+    		    	if(-e $keep_plink)
+    			{
+    		      		my $systmp = "$checkflip_script --dbcol 0,3,4,5 --fth $fth_th --sfh $sec_freq --keep $keep_plink --info $rootdir/$impute_dir/$locref $bfile.hg19.ch.bim" ;
+    			} else { print "Subset of subjects requested, but subset list file does not exist! \n";
+    				}
+    		    } else { 
+    		    	     my $systmp = "$checkflip_script --dbcol 0,3,4,5 --fth $fth_th --sfh $sec_freq --info $rootdir/$impute_dir/$locref $bfile.hg19.ch.bim" ;
+    		    }
 		    push @chefli_arr, $systmp ;
 #		    print "$systmp\n";
 #		    exit;
@@ -1765,7 +1775,16 @@ my $chefli_fini = 0;
 	    }
 	    else {
 		unless (exists $bimfli_array{$accfli}) {
-		    push @chefli_arr, "$checkflip_script --fth $fth_th --sfh $sec_freq --info $refdir/$suminfo_s $bfile.hg19.ch.bim" ;
+			if($keep_plink)
+    			{
+    		    		if(-e $keep_plink)
+    				{	
+    					push @chefli_arr, "$checkflip_script --fth $fth_th --sfh $sec_freq --keep $keep_plink --info $refdir/$suminfo_s $bfile.hg19.ch.bim" ;
+    				} else { print "Subset of subjects requested, but subset list file does not exist! \n";
+    				}
+    			} else {
+		 		push @chefli_arr, "$checkflip_script --fth $fth_th --sfh $sec_freq --info $refdir/$suminfo_s $bfile.hg19.ch.bim" ;
+    			}
 		}
 		else {
 		    $chefli_fini++;
