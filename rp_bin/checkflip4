@@ -80,7 +80,7 @@ my $frq_th = .15;
 my $subdir = "flip_subdir";
 
 my $sec_freq = .2;  ## secure freq distance around 50%
-
+my $keep_plink = "";
 
 my $usage = "
 Usage : $progname [options] bim-file1 bim-file2 ......
