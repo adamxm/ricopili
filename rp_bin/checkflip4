@@ -405,10 +405,12 @@ unless (-e $frq_file) {
     print "creating frq-file\n";
     if($keep_plink)
     {
-    	if(-e $keep_plink}
+    	if(-e $keep_plink)
     	{
     		&mysystem ("$p2loc/plink --memory 2000 --bfile $bfile --keep $keep_plink --out $bfile --freq --nonfounders> /dev/null");
-    	} else  print "Subset of subjects requested, but subset list file does not exist! \n";
+    	} else {
+    		print "Subset of subjects requested, but subset list file does not exist! \n";
+    	}
     } else {
     	&mysystem ("$p2loc/plink --memory 2000 --bfile $bfile --out $bfile --freq --nonfounders> /dev/null");
     }
