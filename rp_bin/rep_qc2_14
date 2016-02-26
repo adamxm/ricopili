@@ -111,7 +111,7 @@ my $me_th1=0.05;
 my $me_th2=0.1;
 my $withpna=0;
 my $sexcheck_min = 10;
-
+my $keep_hwe = "";
 
 #############################################################################
 
@@ -151,7 +151,8 @@ options:
 
   --withpna 1       inlcude SNPs with p=NA (monomorph)
   --noassoc         restricted QC for datasets without both, cases and controls
-
+  --keep_hwe        keep only specified list of subjects
+  
    Defaults:
 
    mind       $mind
@@ -274,6 +275,7 @@ GetOptions(
     "hwe_th_ca=f"=> \$hwe_th_ca,
     "sexmin=i"=> \$sexcheck_min,
 
+    "keep=s"=> \$keep_hwe,
 
 #    "co"=> \my $conly,  # case/control only
     );
@@ -1596,9 +1598,24 @@ if ($calc) {
 	if ($hardy2) {
 	    &mysystem ("$fifi_base --out $fifiprefix.hwetmp --hardy2 ") ;
 	}
-	else {
-	    &mysystem ("$fifi_base --out $fifiprefix.hwetmp --hardy ");
+	else
+	{ 
+		if($keep_hwe)
+		{
+		    	if(-e $keep_hwe)
+    			{	
+    				&mysystem ("$fifi_base --out $fifiprefix.hwetmp --hardy --keep $keep_hwe");	
+    			} 
+    			else 
+    			{
+    				print "Subset of subjects requested, but subset list file does not exist! \n";
+			}
+		}
+		else {
+			 &mysystem ("$fifi_base --out $fifiprefix.hwetmp --hardy ");
+			}
 	}
+	
 	&mysystem ("mv $fifiprefix.hwetmp.hwe $fifiprefix.hwe");
     }
 
