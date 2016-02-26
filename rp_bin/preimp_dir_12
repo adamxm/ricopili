@@ -65,6 +65,8 @@ my $sexcheck_min = 10;
 my $withpna=0;
 my $noassoc = 0;
 
+my $keep_hwe ="";
+
 ##### help message
 my $usage = "
 Usage : $progname [options]
@@ -124,7 +126,7 @@ options to change these values:
   --withpna 1       inlcude SNPs with p=NA (monomorph)
   --sexmin INT      minimum number of chrX SNPs to perform sexcheck, default: $sexcheck_min
 
-
+  --keep FILE	    Keep only these subjects for calculation of HWE (specified as 2 column FID and IID)
  created by Stephan Ripke 2011 at MGH, Boston, MA
  
 ";
@@ -162,7 +164,7 @@ GetOptions(
     "hwe_th_co=f"=> \$hwe_th,
     "hwe_th_ca=f"=> \$hwe_th_ca,
     "withpna=i"=> \$withpna, # mono threshold
-
+    "keep=s"=> \$keep_hwe,
 
 
 
@@ -1042,7 +1044,17 @@ foreach my $bprefix (@bfiles_pi) {
     $option_txt .= " --hwe_th_ca $hwe_th_ca";
     $option_txt .= " --withpna $withpna";
     $option_txt .= " --sexmin $sexcheck_min";
-
+    if($keep_hwe)
+    {
+    	if(-e $keep_hwe)
+    	{
+		$option_txt .= " --keep $keep_hwe";
+	} 
+	else 
+	{ 
+		print "Subset of subjects requested, but subset list file does not exist! \n";
+	}
+    }     		
 
     unless (-e "$bprefix-qc.fini") {
 	push @qc_arr, "$qc_script $option_txt $tdt_txt $prekno_txt $bprefix" ;
