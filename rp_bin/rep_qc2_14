@@ -904,8 +904,19 @@ my $snpex_sefi_mend;
 my $n_snps_nofi= &count_lines ("$prefix.bim");
 
 my $allow = "--allow-no-sex";
-my $assotdt = "--assoc";
+
+#my $assotdt = "--assoc";
+
+
+my $assotdt = "--keep $keep_hwe --assoc";
+
+
 $assotdt = "--tdt" if ($tdt == 1);
+
+
+
+
+	
 
 if ($noassoc) {
     $assotdt = "";
@@ -923,10 +934,12 @@ if ($noassoc) {
 if ($calc){
     unless (-e "$nofiprefix.imiss") {
 	my $sys = "$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb $assotdt --missing";
+	my $sys = "$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb $assotdt";  #Adam: The association test is decoupled from the other tests
+
 #	print "$sys\n";
 #	exit;  
-	&mysystem ("$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb $assotdt --missing --freq");  
-
+	&mysystem ("$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb --missing --freq");  
+	&mysystem ("$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb $assotdt");  #Adam: The association test is decoupled from the other tests
 
 	&asso2tdt_frq("$nofiprefix.tmp") if ($tdt == 1);
 	unless ($noassoc) {
@@ -1568,7 +1581,8 @@ if ($calc) {
 
     unless ($noassoc) {
 	unless (-e "$fifiprefix.assoc") {
-	    &mysystem ("$fifi_base --out $fifiprefix.assotmp $assotdt --ci 0.95 --freq");  
+	    &mysystem ("$fifi_base --out $fifiprefix.assotmp --freq");  
+	    &mysystem ("$fifi_base --out $fifiprefix.assotmp $assotdt --ci 0.95");  #Adam: Decouple association from frequency
 	    
 #	print "assoc debug for se\n";
 #	exit;
@@ -3132,13 +3146,13 @@ if ($prop_ana){
     $pass = "$failedstr" if ($snpex_sefi_hwe > 0);
     $pass = "$greenstr" if ($snpex_sefi_hwe > 100);
     $pass = "$bluestr" if ($snpex_sefi_hwe > 1000);
-    printf FI "SNPs: HWE-controls < %.3g & %d (%.1f\%) \\\\\n",$hwe_th,$snpex_sefi_hwe,100*$snpex_sefi_hwe/$n_snps_fifi;
+    printf FI "SNPs: HWE-European controls < %.3g & %d (%.1f\%) \\\\\n",$hwe_th,$snpex_sefi_hwe,100*$snpex_sefi_hwe/$n_snps_fifi;
 
     $pass="optimal" ;
     $pass = "$failedstr" if ($snpex_sefi_hwe_ca > 0);
     $pass = "$greenstr" if ($snpex_sefi_hwe_ca > 100);
     $pass = "$bluestr" if ($snpex_sefi_hwe_ca > 1000);
-    printf FI "SNPs: HWE-cases < %.3g & %d (%.1f\%) \\\\\n",$hwe_th_ca,$snpex_sefi_hwe_ca,100*$snpex_sefi_hwe_ca/$n_snps_fifi;
+    printf FI "SNPs: HWE-European cases < %.3g & %d (%.1f\%) \\\\\n",$hwe_th_ca,$snpex_sefi_hwe_ca,100*$snpex_sefi_hwe_ca/$n_snps_fifi;
 
     }
     else {
