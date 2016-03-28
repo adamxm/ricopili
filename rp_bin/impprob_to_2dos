@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-
+use Benchmark;
 ######################
 #
 # impprob_to_2dos 
@@ -71,31 +71,43 @@ while ($instream->gzreadline(my $line)){
 	}
 
 	# grab snp info in first 5 columns to init output
-	my $outline = join(' ', @cells[0..4]);
-
+	my $outline_a = join(' ', @cells[0..4]);
+	my @outline_b;
+	
+	#0 will always rescale to zero but 1 might not.
 	# loop sets of 3 probabilities
 	for (my $i=5; $i < $#cells; $i += 3){
 		# init
-		my $probs;
+		my @probs;
 		
 		# check sum valid, then use to rescale
 		# print format: 3 digits, except shorten 1.000(=1) or 0.000(=0)
 		# - Important: leading space required for output formatting
 		my $probsum = @cells[$i] + @cells[$i+1] + @cells[$i+2];
 		if($probsum > 1.1 or $probsum < .98){
-			$probs = " NA NA";
+			@probs = qw(NA,NA);
 		}else{
-			$probs = sprintf(" %1.3f %1.3f", @cells[$i]/$probsum, @cells[$i+1]/$probsum);
-			$probs =~ s/\.000//g;
+			@probs = (@cells[$i]/$probsum , @cells[$i+1]/$probsum);	
 		}
-
+		
 		# record (append to output)
-		$outline .= $probs;
+		push @outline_b,$probs[0];
+		push @outline_b,$probs[1];
+		#print "@outline_b\n";
 	}
+	#print "@outline_b\n";
 
+	my $outline = sprintf " %1.3f" x @outline_b, @outline_b;
+	$outline =~ s/\.000//g;
+
+	#$outline = join($outline_a,$outline); #add back in marker info
+	$outline = $outline_a . $outline; #add back in marker info
+	#print "$outline\n";
 	# output line of results
+	
 	$outstream->gzwrite($outline . "\n");
 }
+#some digits are not rounding because it is recognizing the last element of the array as a long string not 2 separate dosages
 
 # verify hit end of file
 if ($gzerrno != Z_STREAM_END){
