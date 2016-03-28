@@ -72,6 +72,7 @@ while ($instream->gzreadline(my $line)){
 
 	# grab snp info in first 5 columns to init output
 	my $outline_a = join(' ', @cells[0..4]);
+	#Declare an array to hold the probabilities
 	my @outline_b;
 	
 	#0 will always rescale to zero but 1 might not.
@@ -85,7 +86,7 @@ while ($instream->gzreadline(my $line)){
 		# - Important: leading space required for output formatting
 		my $probsum = @cells[$i] + @cells[$i+1] + @cells[$i+2];
 		if($probsum > 1.1 or $probsum < .98){
-			@probs = qw(NA,NA);
+			@probs = qw(NA,NA); 
 		}else{
 			@probs = (@cells[$i]/$probsum , @cells[$i+1]/$probsum);	
 		}
@@ -95,19 +96,16 @@ while ($instream->gzreadline(my $line)){
 		push @outline_b,$probs[1];
 		#print "@outline_b\n";
 	}
-	#print "@outline_b\n";
-
+	#Make a single call to sprintf that rounds all data on the line to 3 digits
 	my $outline = sprintf " %1.3f" x @outline_b, @outline_b;
+	#Remove trailing .000 for 0 and 1 values.
 	$outline =~ s/\.000//g;
+	#add back in marker info
+	$outline = $outline_a . $outline; 
 
-	#$outline = join($outline_a,$outline); #add back in marker info
-	$outline = $outline_a . $outline; #add back in marker info
-	#print "$outline\n";
 	# output line of results
-	
 	$outstream->gzwrite($outline . "\n");
 }
-#some digits are not rounding because it is recognizing the last element of the array as a long string not 2 separate dosages
 
 # verify hit end of file
 if ($gzerrno != Z_STREAM_END){
