@@ -30,7 +30,7 @@ sub trans {
     $conf{$expr};
 }
 
-my $ploc = &trans("ploc");
+my $p2loc = &trans("p2loc");
 
 
 ###############################################
@@ -49,7 +49,7 @@ version: $version
   --bim STRING        bim-file, mandatory
   --chr INT           chromosome
   --help              print this message and exit
-
+  --nhaps             number of subjects per split file
   --prefix STRING     prefix into famfile
 
 
@@ -59,6 +59,7 @@ version: $version
 ";
 
 my $prefix = "";
+my $nhaps_ch=1500;
 
 use Getopt::Long;
 GetOptions( 
@@ -70,7 +71,7 @@ GetOptions(
     "fam=s"=> \my $famname,
     "bim=s"=> \my $bimname,
     "chr=i"=> \my $chr,
-
+    "nhaps=i"=> \my $nhaps_ch,
     );
 
 die ($usage) if $help;
@@ -131,59 +132,72 @@ my $haps_file_gz = "$haps_file1.combined.gz";
 
 
 
-my @filehandles_gz;
 
-################## create one thousand subdirs and thousand filehandles
+#For every file in the haplotype file collection, 
+#we'll take the 2 col. dosage output filename and push it to this array
+#This will be part of an input for PLINK2
+
+#Format for this file: (note that 1 is just a dummy entry, must be 1 for all rows):
+#1 dosage_filename subjects_in_file_filename
+
+my @haps_collection_output = "";
+
+#We'll also make a reference to a subjects file where FID and IIDs of all subjects
+#within a given split will be listed
+my @haps_collection_subjects = "";
+
+#Note: The subject lists could probably be written without having to push, to be corrected in future
+
+
+################## Take all files split haplotypes files and convert them to 2 probability format (preprocess dosages to ensure probabilities sum to 1)
 foreach my $infile (@haps_collection) {
 
-    my $igz = gzopen("$infile", "rb")  or die "Cannot open file $infile: $gzerrno\n" ;
-    push(@filehandles_gz, $igz);
+    my $twodos_tmp = "$infile";
+    $twodos_tmp =~ s/.gz//g; #Take the input haplotype file name and strip the .gz from the name
+    my $twodos_tmp_out = "$twodos_tmp.twodos.gz"; #output file name. 
+    my $twodos_tmp_sucess = "$twodos_tmp_out.fini"; # Success file made by the impprob_to_dos if the step completed
+    my $twodos_tmp_subjfile = "$twodos_tmp.subjects";
+    
+    my $imp_proc = "impprob_to_2dos $infile $twodos_tmp_out";
+    print "$imp_proc\n";
 
-}
-
-
-
-my $ogz = gzopen("$haps_file_gz", "wb")  or die "Cannot open file $haps_file_gz: $gzerrno\n" ;
-
-
-#$ogz->gzwrite($header) ;
-
-my $igz = $filehandles_gz[0];
-
-
-while ($igz->gzreadline(my $line)){
-    chomp($line);
-    my @cells = @{&split_line_ref(\$line)};
-
-    if ($nf > 0) {
-	foreach my $igzn (1..$nf) {
-	    my $igz_add = $filehandles_gz[$igzn];
-	    $igz_add->gzreadline(my $line);
-	    chomp($line);
-	    my @cells_add = @{&split_line_ref(\$line)};
-
-
-	    foreach (1..5) {
-		shift (@cells_add);
-	    }
-
-	    @cells = (@cells,@cells_add);
-	    
-	}
+    unless (-e $twodos_tmp_sucess) {
+         print "Created 2 col. dosage file from $infile";
+        &mysystem ($imp_proc);
     }
-    $ogz->gzwrite("@cells\n");
 
+    # check success
+    # if successful, remove $haps_file_gz now to save space
+
+    if (-e $twodos_tmp_sucess) {
+        #&mysystem("rm $haps_file_gz")
+        #We're just going to do nothing at this step for now. 
+        print "Created 2 col. dosage file from $infile";
+        push @haps_collection_output,$twodos_tmp_out;
+        push @haps_collection_subjects, $twodos_tmp_subjfile;
+    } 
+    else {
+        die "Failed to create $twodos_tmp_out from $infile";
+    }
+
+    
 }
+ 
+#Write an array of 1s the length of the number of splits (dimension of the haps collection file)
+#@plinkfiledim = print '1\n' x $#haps_collection;
+print "$#haps_collection\n";
 
-foreach my $igzn (1..$nf-1) {
-    my $igz_add = $filehandles_gz[$igzn];
-    $igz->gzclose();
+#PLINK input file name
+my $twodos_infiles="$haps_file1.plinkdosagelist";
+
+my $outfile ='';
+open( my $fh, '>', $twodos_infiles) or die "Could not open $twodos_infiles #1";
+
+for (my $i=1;$i <= $#haps_collection + 1;$i++) {
+    $outfile = "1 $haps_collection_output[$i] $haps_collection_subjects[$i]";
+    print $fh "$outfile\n";
 }
-$ogz->gzclose();
-
-#exit;
-
-
+close($fh);
 
 ##########
 # bring multiple files into one
@@ -197,11 +211,6 @@ $info_file .= "_info";
 
 #print "finished big guy\n";
 #exit;
-
-
-
-
-
 
 #my $haps_file = $ARGV[0];
 
@@ -237,6 +246,9 @@ else {
 die $!."($famname_in)" unless open IF, "< $famname_in";
 die $!."($famname_in.ow)" unless open OF, "> $famname_in.ow";
 
+print "\n$famname_in.ow\n";
+
+
 while (my $line = <IF>){
     my @cells = @{&split_line_ref(\$line)};
     if ($cells[5] != 2 && $cells[5] != 1) {
@@ -247,37 +259,38 @@ while (my $line = <IF>){
 close IF;
 close OF;
 
+#Split the .fam file up here, in sizes of whatever had been specified originally in $spliha_n. This will be used to make subject lists for PLINK2
 
-# preprocess dosages to ensure probabilities sum to 1
-my $twodos_tmp = "$haps_file1.combined.tmp2dos.gz";
-my $twodos_tmp_success = "$twodos_tmp.fini";
-my $imp_proc = "impprob_to_2dos $haps_file_gz $twodos_tmp";
-print "$imp_proc\n";
 
-unless (-e $twodos_tmp_success) {
-    &mysystem ($imp_proc);
+#The number of splits is the number of items in haps collection
+my $nsp = $#haps_collection + 1;
+my $splitstart = '';
+my $splitstop = '';
+my @line = '';
+for (my $splitnum = 1; $splitnum <= $nsp; $splitnum++){
+     $splitstart = ($splitnum - 1)  * $nhaps_ch + 1;
+     $splitstop = ($splitnum * $nhaps_ch);
+     print "Making subject data for $haps_collection_subjects[$splitnum]\n";
+     open(my $fh, '>', "$haps_collection_subjects[$splitnum]");
+     open(my $in,  '<',  "$famname_in.ow" )     or die "Can't read family file: $!";
+ 
+     while( <$in> ) {
+      if( $. >= $splitstart  & $. <= $splitstop) {
+       @line = split(' ', $_,);
+       print $fh "$line[0] $line[1]\n";
+       } 
+      }
+      close $in;
+      close($fh);
 }
+      
 
-# check success
-# if successful, remove $haps_file_gz now to save space
-
-
-if (-e $twodos_tmp_success) {
-    &mysystem("rm $haps_file_gz")
-} 
-else {
-    die "Failed to create $twodos_tmp from $haps_file_gz";
-}
-
-
-#my $sys_loc = "$ploc/plink --dosage $haps_file_gz noheader skip0=1 skip1=1 format=3 Z --fam $famname_in.ow --allow-no-sex --write-dosage --out $dosout";
-my $sys_loc = "$ploc/plink --dosage $twodos_tmp noheader skip0=1 skip1=1 format=2 Z --fam $famname_in.ow --allow-no-sex --write-dosage --out $dosout";
+#Combine all data in plink2
+my $sys_loc = "$p2loc/plink --dosage $twodos_infiles list sepheader skip0=1 skip1=1 format=2 Z --fam $famname_in.ow --allow-no-sex --write-dosage --out $dosout";
 print "$sys_loc\n";
 &mysystem ($sys_loc);
 
 #exit;
-
-
 
 my %ngt;
 my $cc = 0;
@@ -336,6 +349,6 @@ close BC;
 
 &mysystem ("touch $finiout");
 #&mysystem ("rm $haps_file_gz");
-&mysystem ("rm $twodos_tmp");
+#&mysystem ("rm $twodos_tmp");
 
 print "done\n";
