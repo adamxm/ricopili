@@ -2749,7 +2749,7 @@ if ($dos_done == 0) {
 #		    print "really not existing: $dos_ch_out_fini\n ";
 #		    exit;
 		    ################################## work on this here!!!!!
-		    my $sys_loc = "$dos_script $prefix_loc --outname $dos_ch_out --outdir $dasudir_loc  --chr $refchr --fam $famname_loc --bim $plink_ch_out.bim $puter_out_arr";
+		    my $sys_loc = "$dos_script $prefix_loc --outname $dos_ch_out --outdir $dasudir_loc  --chr $refchr --fam $famname_loc --bim $plink_ch_out.bim --nhaps $spliha_n $puter_out_arr";
 #		    my $sys_loc = "my.imp2 --out $pi_ch_out --in $haps_file_loc --refstart $refstart --refend $refend  --reffile $refchunk  --gema $gema_file";
 #		    print "$sys_loc\n";
 		    push @dos_arr, $sys_loc;
