@@ -32,7 +32,6 @@ sub trans {
 
 my $p2loc = &trans("p2loc");
 
-
 ###############################################
 
 
@@ -50,6 +49,7 @@ version: $version
   --chr INT           chromosome
   --help              print this message and exit
   --nhaps             number of subjects per split file
+  --haps2dos_p1p2 INT Script has two parts (value 1) Make 2 col. dosage files and(value 2) merge the two col dosage files together. 
   --prefix STRING     prefix into famfile
 
 
@@ -72,6 +72,7 @@ GetOptions(
     "bim=s"=> \my $bimname,
     "chr=i"=> \my $chr,
     "nhaps=i"=> \my $nhaps_ch,
+    "haps2dos_p1p2=s"=> \my $haps2dos_p1p2
     );
 
 die ($usage) if $help;
@@ -131,7 +132,7 @@ my $haps_file = "$haps_file1.combined";
 my $haps_file_gz = "$haps_file1.combined.gz";
 
 
-
+print "\n\n\nHEY BRO $haps_collection[1]\n";
 
 #For every file in the haplotype file collection, 
 #we'll take the 2 col. dosage output filename and push it to this array
@@ -140,215 +141,241 @@ my $haps_file_gz = "$haps_file1.combined.gz";
 #Format for this file: (note that 1 is just a dummy entry, must be 1 for all rows):
 #1 dosage_filename subjects_in_file_filename
 
-my @haps_collection_output = "";
+my @haps_collection_output ="";
+
+foreach my $name (@haps_collection){
+	my $name2 = $name;
+	$name2 =~ s/.gz//g;
+	$name2 .= ".twodos.gz";
+	print "\n $name2 \n";
+	push @haps_collection_output,$name2;
+}
 
 #We'll also make a reference to a subjects file where FID and IIDs of all subjects
 #within a given split will be listed
+
 my @haps_collection_subjects = "";
+
+foreach my $name (@haps_collection){
+	my $name2 = $name;
+	$name2 =~ s/.gz//g;
+	$name2 .= ".subjects";
+	print "\n $name2 \n";
+	push @haps_collection_subjects,$name2;
+}
 
 #Note: The subject lists could probably be written without having to push, to be corrected in future
 
-
-################## Take all files split haplotypes files and convert them to 2 probability format (preprocess dosages to ensure probabilities sum to 1)
-foreach my $infile (@haps_collection) {
-
-    my $twodos_tmp = "$infile";
-    $twodos_tmp =~ s/.gz//g; #Take the input haplotype file name and strip the .gz from the name
-    my $twodos_tmp_out = "$twodos_tmp.twodos.gz"; #output file name. 
-    my $twodos_tmp_sucess = "$twodos_tmp_out.fini"; # Success file made by the impprob_to_dos if the step completed
-    my $twodos_tmp_subjfile = "$twodos_tmp.subjects";
-    
-    my $imp_proc = "impprob_to_2dos $infile $twodos_tmp_out";
-    print "$imp_proc\n";
-
-    unless (-e $twodos_tmp_sucess) {
-         print "Created 2 col. dosage file from $infile";
-        &mysystem ($imp_proc);
-    }
-
-    # check success
-    # if successful, remove $haps_file_gz now to save space
-
-    if (-e $twodos_tmp_sucess) {
-        #&mysystem("rm $haps_file_gz")
-        #We're just going to do nothing at this step for now. 
-        print "Created 2 col. dosage file from $infile";
-        push @haps_collection_output,$twodos_tmp_out;
-        push @haps_collection_subjects, $twodos_tmp_subjfile;
-    } 
-    else {
-        die "Failed to create $twodos_tmp_out from $infile";
-    }
-
-    
-}
- 
-#Write an array of 1s the length of the number of splits (dimension of the haps collection file)
-#@plinkfiledim = print '1\n' x $#haps_collection;
-print "$#haps_collection\n";
-
-#PLINK input file name
+#PLINK file list input file name
 my $twodos_infiles="$haps_file1.plinkdosagelist";
 
-my $outfile ='';
-open( my $fh, '>', $twodos_infiles) or die "Could not open $twodos_infiles #1";
+if ($haps2dos_p1p2 == 1)
+{
 
-for (my $i=1;$i <= $#haps_collection + 1;$i++) {
-    $outfile = "1 $haps_collection_output[$i] $haps_collection_subjects[$i]";
-    print $fh "$outfile\n";
+    ################## Take all files split haplotypes files and convert them to 2 probability format (preprocess dosages to ensure probabilities sum to 1)
+    foreach my $infile (@haps_collection) {
+
+        my $twodos_tmp = "$infile";
+        $twodos_tmp =~ s/.gz//g; #Take the input haplotype file name and strip the .gz from the name
+        my $twodos_tmp_out = "$twodos_tmp.twodos.gz"; #output file name. 
+        my $twodos_tmp_sucess = "$twodos_tmp_out.fini"; # Success file made by the impprob_to_dos if the step completed
+       
+        my $imp_proc = "impprob_to_2dos $infile $twodos_tmp_out";
+       
+
+        unless (-e $twodos_tmp_sucess) {
+            &mysystem ($imp_proc);
+            print "Created 2 col. dosage file from $infile";
+        }
+
+        # check success
+        # if successful, remove $haps_file_gz now to save space
+
+        if (-e $twodos_tmp_sucess) {
+            #&mysystem("rm $haps_file_gz")
+            #We're just going to do nothing at this step for now. 
+            print "Created 2 col. dosage file from $infile";
+        } 
+        else {
+            die "Failed to create $twodos_tmp_out from $infile";
+        }
+
+        
+    }
+     
+    #Adam: Write an array of 1s the length of the number of splits (dimension of the haps collection file)
+    #This doesn't necessarily need to be here, it doesn't truly depend on the prior loop, it could be done
+    #by modification of the original array list
+    #@plinkfiledim = print '1\n' x $#haps_collection;
+
+    my $outfile ='';
+    open( my $fh, '>', $twodos_infiles) or die "Could not open $twodos_infiles #1";
+
+    for (my $i=1;$i <= $#haps_collection + 1;$i++) {
+        $outfile = "1 $haps_collection_output[$i] $haps_collection_subjects[$i]";
+        print $fh "$outfile\n";
+    }
+    close($fh);
 }
-close($fh);
-
 ##########
 # bring multiple files into one
 ########
 
 
-my $info_file = $haps_file1;
-$info_file =~ s/.gz$//;
-$info_file .= "_info";
+    my $info_file = $haps_file1;
+    $info_file =~ s/.gz$//;
+    $info_file .= "_info";
 
 
-#print "finished big guy\n";
-#exit;
+    #print "finished big guy\n";
+    #exit;
 
-#my $haps_file = $ARGV[0];
+    #my $haps_file = $ARGV[0];
 
-my $dosout = "$outdir/$outname";
-my $mapout = "$outdir/$outname.out.dosage.map";
-my $ngtout = "$outdir/$outname.out.dosage.ngt";
-my $famout = "$outdir/$outname.out.dosage.fam";
-my $finiout = "$outdir/$outname.out.dosage.fini";
+    my $dosout = "$outdir/$outname";
+    my $mapout = "$outdir/$outname.out.dosage.map";
+    my $ngtout = "$outdir/$outname.out.dosage.ngt";
+    my $famout = "$outdir/$outname.out.dosage.fam";
+    my $finiout = "$outdir/$outname.out.dosage.fini";
+    my $finiout2 = "$outdir/$outname.out.dosage.fini2";
+    my $famname_in = $famname;
 
-my $famname_in = $famname;
+if ($haps2dos_p1p2 == 1)
+{
+   &mysystem ("touch $finiout");
+}
+
+if ($haps2dos_p1p2 == 2)
+{
+    if ($prefix) {
+        die $!."($famname)" unless open IF, "< $famname";
+        die $!."($famname.pre)" unless open OF, "> $famname.pre";
+
+        while (my $line = <IF>){
+        chomp($line);
+
+        print OF "$prefix*$line\n";
+        }
+        close IF;
+        close OF;
+        $famname_in = "$famname.pre";
+        &mysystem ("cp $famname.pre $famout");
+    }
+    else {
+        &mysystem ("cp $famname $famout");
+    }
 
 
-if ($prefix) {
-    die $!."($famname)" unless open IF, "< $famname";
-    die $!."($famname.pre)" unless open OF, "> $famname.pre";
+
+    die $!."($famname_in)" unless open IF, "< $famname_in";
+    die $!."($famname_in.ow)" unless open OF, "> $famname_in.ow";
+
+    print "\n$famname_in.ow\n";
+
 
     while (my $line = <IF>){
-	chomp($line);
-
-	print OF "$prefix*$line\n";
+        my @cells = @{&split_line_ref(\$line)};
+        if ($cells[5] != 2 && $cells[5] != 1) {
+        $cells[5] = 1;
+        }
+        print OF "@cells\n";
     }
     close IF;
     close OF;
-    $famname_in = "$famname.pre";
-    &mysystem ("cp $famname.pre $famout");
-}
-else {
-    &mysystem ("cp $famname $famout");
-}
 
+    #Adam: Split the .fam file up here, in sizes of whatever had been specified originally in $spliha_n. 
+    #This will be used to make subject lists for PLINK2
+    #The number of splits is the number of items in haps collection
+    my $nsp = $#haps_collection + 1;
+    my $splitstart = '';
+    my $splitstop = '';
+    my @line = '';
 
-
-die $!."($famname_in)" unless open IF, "< $famname_in";
-die $!."($famname_in.ow)" unless open OF, "> $famname_in.ow";
-
-print "\n$famname_in.ow\n";
-
-
-while (my $line = <IF>){
-    my @cells = @{&split_line_ref(\$line)};
-    if ($cells[5] != 2 && $cells[5] != 1) {
-	$cells[5] = 1;
+    for (my $splitnum = 1; $splitnum <= $nsp; $splitnum++){
+         $splitstart = ($splitnum - 1)  * $nhaps_ch + 1;
+         $splitstop = ($splitnum * $nhaps_ch);
+         print "Making subject data for $haps_collection_subjects[$splitnum]\n";
+         open(my $fh, '>', "$haps_collection_subjects[$splitnum]");
+         open(my $in,  '<',  "$famname_in.ow" )     or die "Can't read family file: $!";
+     
+         while( <$in> ) {
+          if( $. >= $splitstart  & $. <= $splitstop) {
+           @line = split(' ', $_,);
+           print $fh "$line[0] $line[1]\n";
+           } 
+          }
+          close $in;
+          close($fh);
     }
-    print OF "@cells\n";
+          
+
+    #Combine all data in plink2
+    my $sys_loc = "$p2loc/plink --dosage $twodos_infiles list sepheader skip0=1 skip1=1 format=2 Z --fam $famname_in.ow --allow-no-sex --write-dosage --out $dosout";
+    print "$sys_loc\n";
+    &mysystem ($sys_loc);
+
+    #exit;
+
+    my %ngt;
+    my $cc = 0;
+    die $!."($bimname)" unless open FILE, "< $bimname";
+    while (my $line = <FILE>){
+        my @cells = @{&split_line_ref(\$line)};
+        $ngt{$cells[1]} = 1;
+        $cc++;
+    }
+    close FILE;
+    #print "N:$cc\n";
+    #print "$info_file\n";
+    #sleep(3);
+
+    if ($info_file) {
+        die $!."($info_file)" unless open IF, "< $info_file";
+        die $!."($mapout)" unless open MA, "> $mapout";
+        die $!."($ngtout)" unless open NGT, "> $ngtout";
+        my $line = <IF>;
+        while (my $line = <IF>){
+        my @cells = @{&split_line_ref(\$line)};
+
+        my $snp = $cells[1];
+        my $pos = $cells[2];
+
+
+        my $bas_str = "$chr $snp 0 $pos";
+        print MA "$bas_str\n";
+        my $ngt_loc = 0;
+        if (exists $ngt{$snp}) {
+            $ngt_loc = 1;
+        }
+        print NGT "$bas_str $ngt_loc\n";
+        }
+        close IF;
+        close MA;
+        close NGT;
+    }
+
+
+    #&mysystem ("gzip -c $dosout.out.dosage > $dosout.out.dosage.tmp.gz");
+    #&mysystem ("rm $dosout.out.dosage");
+    #&mysystem ("mv $dosout.out.dosage.tmp.gz $dosout.out.dosage.gz");
+
+    #print "no remove\n";
+    #exit;
+	 &mysystem ("touch $finiout2");
+
 }
-close IF;
-close OF;
+    die $!."$dosout.dos.cmd" unless open BC, "> $dosout.dos.cmd";
+    foreach (@cmd_collect) {
+        print BC "$_\n";
+    }
+    close BC;
 
-#Split the .fam file up here, in sizes of whatever had been specified originally in $spliha_n. This will be used to make subject lists for PLINK2
 
 
-#The number of splits is the number of items in haps collection
-my $nsp = $#haps_collection + 1;
-my $splitstart = '';
-my $splitstop = '';
-my @line = '';
-for (my $splitnum = 1; $splitnum <= $nsp; $splitnum++){
-     $splitstart = ($splitnum - 1)  * $nhaps_ch + 1;
-     $splitstop = ($splitnum * $nhaps_ch);
-     print "Making subject data for $haps_collection_subjects[$splitnum]\n";
-     open(my $fh, '>', "$haps_collection_subjects[$splitnum]");
-     open(my $in,  '<',  "$famname_in.ow" )     or die "Can't read family file: $!";
  
-     while( <$in> ) {
-      if( $. >= $splitstart  & $. <= $splitstop) {
-       @line = split(' ', $_,);
-       print $fh "$line[0] $line[1]\n";
-       } 
-      }
-      close $in;
-      close($fh);
-}
-      
-
-#Combine all data in plink2
-my $sys_loc = "$p2loc/plink --dosage $twodos_infiles list sepheader skip0=1 skip1=1 format=2 Z --fam $famname_in.ow --allow-no-sex --write-dosage --out $dosout";
-print "$sys_loc\n";
-&mysystem ($sys_loc);
-
-#exit;
-
-my %ngt;
-my $cc = 0;
-die $!."($bimname)" unless open FILE, "< $bimname";
-while (my $line = <FILE>){
-    my @cells = @{&split_line_ref(\$line)};
-    $ngt{$cells[1]} = 1;
-    $cc++;
-}
-close FILE;
-#print "N:$cc\n";
-#print "$info_file\n";
-#sleep(3);
-
-if ($info_file) {
-    die $!."($info_file)" unless open IF, "< $info_file";
-    die $!."($mapout)" unless open MA, "> $mapout";
-    die $!."($ngtout)" unless open NGT, "> $ngtout";
-    my $line = <IF>;
-    while (my $line = <IF>){
-	my @cells = @{&split_line_ref(\$line)};
-
-	my $snp = $cells[1];
-	my $pos = $cells[2];
+   
+    #&mysystem ("rm $haps_file_gz");
+    #&mysystem ("rm $twodos_tmp");
 
 
-	my $bas_str = "$chr $snp 0 $pos";
-	print MA "$bas_str\n";
-	my $ngt_loc = 0;
-	if (exists $ngt{$snp}) {
-	    $ngt_loc = 1;
-	}
-	print NGT "$bas_str $ngt_loc\n";
-    }
-    close IF;
-    close MA;
-    close NGT;
-}
-
-
-#&mysystem ("gzip -c $dosout.out.dosage > $dosout.out.dosage.tmp.gz");
-#&mysystem ("rm $dosout.out.dosage");
-#&mysystem ("mv $dosout.out.dosage.tmp.gz $dosout.out.dosage.gz");
-
-#print "no remove\n";
-#exit;
-
-
-die $!."$dosout.dos.cmd" unless open BC, "> $dosout.dos.cmd";
-foreach (@cmd_collect) {
-    print BC "$_\n";
-}
-close BC;
-
-
-
-&mysystem ("touch $finiout");
-#&mysystem ("rm $haps_file_gz");
-#&mysystem ("rm $twodos_tmp");
-
-print "done\n";
+print "haps2dos part $haps2dos_p1p2 done\n";
