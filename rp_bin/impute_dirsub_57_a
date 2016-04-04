@@ -53,7 +53,10 @@ use strict;
 # version 56
 #   probability check (patch from raymond)
 #   UGER at broad
+
 #
+# Adam mar 31
+#   Added ability to run memory intensive jobs sequentailyl rather than in parallel
 #######################################
 
 
@@ -894,6 +897,7 @@ my $sjamaxpar = 0;
 my $sjatime = -1;
 my $sjamaxjobs = 30000;
 
+my $sjaparallel_jobs = 1; #Adam : toggle variable for running tasks on a node in serial 
 
 if ($qloc eq "qsub") {
     $sjamaxjobs = 8000;
@@ -997,7 +1001,11 @@ sub send_jobarray {
 	$sja_week_str = "--week 1";
     }
 
-
+    my $parallel_jobs_str = "";
+    if ($sjaparallel_jobs == 0)
+    {
+      $parallel_jobs_str = "--parallel 0"
+    }
 
     
     if ($serial) {
@@ -1012,7 +1020,7 @@ sub send_jobarray {
 	}
     }
     else { 
-	my $sys_loc = "$blue_script $sja_week_str --maxpar $sjamaxpar --noerr --njob $nsja_loc --array $jobfile --wa $sjatime --mem $sjamem --j --na $sjaname.$outname $multi_txt";
+	my $sys_loc = "$blue_script $sja_week_str --maxpar $sjamaxpar $parallel_jobs_str --noerr --njob $nsja_loc --array $jobfile --wa $sjatime --mem $sjamem --j --na $sjaname.$outname $multi_txt";
 #    print "$sys_loc\n";
 #    exit;
 
@@ -2637,19 +2645,18 @@ if ($imp2_done == 0) {
 ### dosing
 #############################################################
 
-
 my $dos_done = 0;
 if (-e "$rootdir/dos_done") {
     $dos_done = 1;
 }
 
-
-
 my $dasudir = "$rootdir/dasu";
 #print "dasudir: $dasudir\n";
 #exit;
 
-my @dos_arr = ();
+my @dos_arr = (); #For part 1 (file conversion to 2 columns)
+my @dos_arr2 = (); # For part 2 (conversion to PLINK)
+
 my $dos_fini = 0;
 if ($dos_done == 0) {
     ### loop for datasets
@@ -2699,15 +2706,17 @@ if ($dos_done == 0) {
 
 	my @dirfiles = ();
 	my @finifiles = ();
-
+	my @finifiles2 = ();
 	print "read outdir....\n";
 	opendir(DIR, $dasudir_loc) || die "can't opendir .: $!";
 	@finifiles = grep {/\.out.dosage.fini$/} readdir(DIR);
+	@finifiles2 = grep {/\.out.dosage.fini2$/} readdir(DIR);
 	closedir DIR;
 
 #	print "<$finifiles[0]>\n";
 
 	my %finifiles_hash = map { $_ => 1 } @finifiles;
+	my %finifiles2_hash = map { $_ => 1 } @finifiles2;
 
 	print "start dos refdirloop....\n";
 	#### loop for reference chunks
@@ -2722,6 +2731,7 @@ if ($dos_done == 0) {
 
 	    my $dos_ch_out = "dos_$bprefix.$refind";
 	    my $dos_ch_out_fini = "dos_$bprefix.$refind.out.dosage.fini";
+	    my $dos_ch_out_fini2 = "dos_$bprefix.$refind.out.dosage.fini2";
 
 	    my $plink_ch_out = "subbfile_$bprefix/plink.$bprefix.$refind";
 	    my $famname_loc = "$plink_ch_out.fam";
@@ -2746,13 +2756,12 @@ if ($dos_done == 0) {
 
 		   		    
 		unless (exists $finifiles_hash{$dos_ch_out_fini} ) {
-#		    print "really not existing: $dos_ch_out_fini\n ";
-#		    exit;
-		    ################################## work on this here!!!!!
-		    my $sys_loc = "$dos_script $prefix_loc --outname $dos_ch_out --outdir $dasudir_loc  --chr $refchr --fam $famname_loc --bim $plink_ch_out.bim --nhaps $spliha_n $puter_out_arr";
-#		    my $sys_loc = "my.imp2 --out $pi_ch_out --in $haps_file_loc --refstart $refstart --refend $refend  --reffile $refchunk  --gema $gema_file";
-#		    print "$sys_loc\n";
+		    my $sys_loc  = "$dos_script $prefix_loc --outname $dos_ch_out --outdir $dasudir_loc  --chr $refchr --fam $famname_loc --bim $plink_ch_out.bim --haps2dos_p1p2 1 --nhaps $spliha_n $puter_out_arr";
 		    push @dos_arr, $sys_loc;
+		}
+		unless (exists $finifiles2_hash{$dos_ch_out_fini2} ) {
+                  my $sys_loc2 = "$dos_script $prefix_loc --outname $dos_ch_out --outdir $dasudir_loc  --chr $refchr --fam $famname_loc --bim $plink_ch_out.bim --haps2dos_p1p2 2 --nhaps $spliha_n $puter_out_arr";
+            	    push @dos_arr2, $sys_loc2;
 #		    exit;
 		}
 		else {
@@ -2769,19 +2778,17 @@ if ($dos_done == 0) {
 ###################################
 ### send dos jobs
 ###################################
-    
+    #Now divided into parts A and B
     if (@dos_arr > 0) {
 	
 	$sjadir = $impute_dir;
 	$sjaname = "dos";
-	$sjatime = 2;
-#	$sjatime = 4 if ($dos_fini > 0);
-	$sjamem = 2000;
+	$sjatime = 6;
+	$sjamem = 12000;
 	$sjamaxpar = 100;
+       $sjaparallel_jobs = 1; #Run part 1 in parallel
 	@sjaarray = @dos_arr;
-	
 	&send_jobarray;
-	
     }
     else {
 	&mysystem ("touch $rootdir/dos_done");
@@ -2790,6 +2797,30 @@ if ($dos_done == 0) {
 
 }
 
+
+my $dos2_done = 0;
+
+if (-e "$rootdir/dos2_done") {
+    $dos2_done = 1;
+}
+
+if ($dos2_done == 0) {
+	if (@dos_arr2 > 0) {
+	
+	$sjadir = $impute_dir;
+	$sjatime = 6;
+	$sjamem = 12000;
+	$sjamaxpar = 100;
+       $sjaname = "dos2";
+       $sjaparallel_jobs = 0; #run part 2 sequentailly
+	@sjaarray = @dos_arr2;
+	&send_jobarray;
+	}	
+   	else {
+	&mysystem ("touch $rootdir/dos2_done");
+	print "dos2 done\n";
+    	}
+}
 
 #print "debug after dos\n";
 #exit;
@@ -2885,9 +2916,9 @@ if ($dabg_done == 0) {
 
 	$sjadir = $impute_dir;
 	$sjaname = "dabg";
-	$sjatime = 2;
+	$sjatime = 12; # have increased walltime and memory
 #	$sjatime = 20 if ($dabg_fini == 0);
-	$sjamem = 1000;
+	$sjamem = 12000; # have increased walltime and memory
 	$sjamaxpar = 100;
 	@sjaarray = @dabg_arr;
 
@@ -3051,7 +3082,7 @@ if (@cobg_arr > 0) {
     
     $sjadir = $cobg_dir;
     $sjaname = "cobg";
-    $sjatime = 2;
+    $sjatime = 4;
     $sjamem = 1000;
     @sjaarray = @cobg_arr;
     
@@ -3073,7 +3104,7 @@ if (@prune_arr > 0) {
     
     $sjadir = $cobg_dir;
     $sjaname = "prune";
-    $sjatime = 2;
+    $sjatime = 4;
     $sjamem = 1000;
     @sjaarray = @prune_arr;
     
@@ -3107,7 +3138,7 @@ if (@merge_arr > 0) {
     
     $sjadir = $cobg_dir;
     $sjaname = "merge";
-    $sjatime = 2;
+    $sjatime = 4;
     $sjamem = 3000;
     @sjaarray = @merge_job;
     
@@ -3194,7 +3225,7 @@ if (@cobg_gw_arr > 0) {
     
     $sjadir = $cobg_gw_dir;
     $sjaname = "cobg_gw";
-    $sjatime = 2;
+    $sjatime = 4;
 #    $sjatime = 4 if ($cobg_gw_fini > 0);
     $sjamem = 12000;
     @sjaarray = @cobg_gw_arr;
@@ -3340,7 +3371,7 @@ unless (-e "$rootdir/clean_done"){
 #	exit;
 	$sjadir = $rootdir;
 	$sjaname = "clean";
-	$sjatime = 2;
+	$sjatime = 4;
 	$sjamem = 1000;
 	$sjamaxpar = 100;
 	@sjaarray = @clean_arr;
@@ -3385,7 +3416,7 @@ if (@du_arr > 0) {
     
     $sjadir = $rootdir;
     $sjaname = "du";
-    $sjatime = 2;
+    $sjatime = 4;
     $sjamem = 1000;
     @sjaarray = @du_arr;
     
