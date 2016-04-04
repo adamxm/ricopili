@@ -47,7 +47,7 @@ sub trans {
     $conf{$expr};
 }
 
-my $ploc = &trans("ploc");
+my $ploc = &trans("p2loc");
 my $sloc = &trans("sloc");
 my $qloc = &trans("queue");
 
