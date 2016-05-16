@@ -11,5 +11,5 @@ https://sites.google.com/a/broadinstitute.org/ricopili/home to install ricopili
 Download all scripts in the base directory as well, and follow the methods shown in in manc_master_01
 to run the pipeline
 
-The method requires some additional files that can be downloaded (either here or linked on the web)
+The method requires some additional files that need to be downloaded (either from here or linked on the web - i.e. eigensoft, snpweights, and PLINK2)
 
