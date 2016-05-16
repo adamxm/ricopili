@@ -1,0 +1,150 @@
+###Ricopili Modified for Ancestry (MANC) master script
+
+#V1 - May 16, 2016 - Initial release
+
+#This file contains step by step commands for how to run Ricopili MANC
+#It is essentially the same as what you would do for Ricopili, but with some
+#additional commands involved. Follow the Ricopili installation instructions
+#then use this guide to QC and impute the data
+
+#All commands are meant to be run from a Linux shell. The user will have to 
+#download some files and note where they are stored
+
+#This is currently only set up for LISA 
+#(or, given additional configurations, a computing system with TORQUE on it)
+
+
+###Initial configuration steps
+
+##Path to folder (existing, you the user must make this folder!) where you would like all data to be analyzed and stored
+ WORKING_DIR=/home/maihofer/NSS1
+ 
+##Make a folder called starting_data and put your PLINK genotypes into it!
+ mkdir starting_data
+ 
+##Make a folder for the ancestry call data and temporary files directories
+ mkdir ancestry
+ mkdir temporary_files
+
+##Make a folder called scripts and put the following scripts into it: call_ancestry_v2_may6_2016.sh, ancestry_plots_v1_may5_2016.R, make_rsid_update_file_v1_may5_2016.R, rsidupdate_for_impdir_v1_may5_2016.R, make_hwe_file_v1_may5_2016.R
+ mkdir scripts
+ 
+ 
+##Specify the locations of the other input files.
+
+#Give the location of the PLINK 2 binary
+ plink_location=/home/maihofer/ricopili/plink2beta335/plink
+
+#Write the name of the PLINK bed/bim/fam 
+ bfile=NSS1PPDS_to_pgcswap_sexupdate
+
+#Give the folder where this PLINK binary is stored 
+ bfile_directory="$WORKING_DIR"/starting_data
+
+#Location of the list of ancestry panel SNP rsids
+ snpweights_snplist=/home/maihofer/ricopili/SNPweights2.1/hgdp_kgp_merged_v3_jointsample_v4_k6.snplist
+ 
+#Location of ancestry panel
+ snpweightfile_path=/home/maihofer/ricopili/SNPweights2.1/hgdp_kgp_merged_v3_jointsample_v4_k6.snpweightrefpanel
+ 
+#Location of SNPweights (see http://www.hsph.harvard.edu/alkes-price/software/)
+ snpweights_path=/home/maihofer/ricopili/SNPweights2.1/inferancestry.py
+
+#Location of convertf tool from EIGENSOFT (http://www.hsph.harvard.edu/alkes-price/software/)
+ eigensoft_loc=/home/gwas/eigensoft/convertf
+ 
+#abbreviation (exactly 4 characters) for the study name
+ abbr=nss1
+
+#Give path of Illumina SNP ID to rs-id conversion table. Illumina provides these in the 
+#Go to the kit support page for the array, click downloads, then click ArrayNameHere support files
+#the file should be under the name of "ArrayNameHere Loci Name to rsID Conversion File"
+ illumina_snplist=starting_data/InfiniumOmniExpressExome-8v1-3_A_b138_rsids.txt
+
+#Phenotype file (optional, do if you need to update your PLINK file) in the 3 column, tab delimited format of FID IID Phenotype (1 = control, 2 = case, -9 = missing)
+ phenotype_filepath=../NSS2/NSSPPDS.pheno
+#Gender file (optional, do if you need to update your PLINK file) in the 3 column, tab delimited format of FID IID Gender (1 = male, 2 = female)
+ gender_filepath=../NSS2/NSSPPDS.gender
+ 
+###Ancestry determination steps
+
+#Execute from base directory with folder 
+cd $WORKING_DIR
+
+
+#starting_data that has the initial genotype data, Illumina marker annotations, phenotype and gender information
+
+#Use Illumina supplied list of SNPs that can be renamed
+ Rscript --vanilla scripts/make_rsid_update_file_v1_may5_2016.R "$illumina_snplist"
+
+ rsidfile="$WORKING_DIR"/"$illumina_snplist"_nodot_first
+
+## Call subject ancestries. It's really important to let this job finish running before continuing!!!!
+
+ scripts/call_ancestry_v2_may6_2016.sh $plink_location $bfile $rsidfile $bfile_directory $snpweights_snplist $snpweights_path $snpweightfile_path $eigensoft_loc
+
+#Run IBD to get a list of related subjects to remove
+ $plink_location --bfile "$bfile_directory"/"$bfile" --maf 0.05 --geno 0.02 --indep-pairwise 50 5 0.2 --out temporary_files/"$bfile"_ibd
+ $plink_location --bfile "$bfile_directory"/"$bfile" --extract  temporary_files/"$bfile"_ibd.prune.in --genome --min 0.2 --out  temporary_files/"$bfile"_ibd
+ awk '{if(NR ==1) print "FID","IID"; else print $3,$4}' temporary_files/"$bfile"_ibd.genome > temporary_files/"$bfile"_ibd.remove
+
+#Combine the SNPweights ancestry calls
+ cat temporary_files/"$bfile"_anc_*.predpc_oneweek  > ancestry/"$bfile".predpc_oneweek
+
+#Call into the ancestry folder, classify subject ancestry, produce an ancestry PC plot
+ cd "$WORKING_DIR"/ancestry 
+ Rscript --vanilla ../scripts/ancestry_plots_v1_may5_2016.R "$bfile".predpc_oneweek /home/maihofer/ricopili/SNPweights2.1/hgdp_kgp_merged_v3_jointsample_v4_k6.snpweightrefpanel_clustercenters.csv
+
+### Preimputation QC
+
+#call back into base dir
+cd "$WORKING_DIR"
+
+#Make a copy of the data into the base directory. Update the phenotype and gender of all subjects at this point if necessary.
+#If that is not necessary, remove --update-sex "$gender_filepath" --pheno "$phenotype_filepath" from this command!
+ $plink_location --bfile "$bfile_directory"/"$bfile" --update-sex "$gender_filepath" --pheno "$phenotype_filepath" --make-bed --out "$abbr"
+ 
+#Run the first step of pre-imputation, which guesses the genotyping platform and gives subjects names
+ preimp_dir_12_getids --dis pts --popname mix --out "$abbr" #Is setting HWE at this step necessary?
+
+#Now I have the IDs that will be used. Make --keep file using this by going back to the ancestry script
+
+#Examine the ancestry file and find the largest homogenous ethnic group, and filter out subjects for IBD
+#If N < 200, take largest two-way admixed group
+#This list of subjects will be used for certain QC steps and strand alignment steps!!
+
+#Write down the population name here. Can be one of either: 
+#eur (european), csa (central-south asian), eas (east asian), aam (African American), 
+#lat (latino), nat (Native American/Alaska Native), pue (Puerto Rican -like), oce (Oceanian), fil (filipino -like)
+ pop="eur"
+ Rscript --vanilla scripts/make_hwe_file_v1_may5_2016.R qc/pts_"$abbr"_mix_am.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt "$pop" temporary_files/"$bfile"_ibd.remove
+ 
+#Make sure the ancestry file exists (If this returns an error instead of giving you a file header, something has gone wrong)
+ head "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects
+
+#Run the pre-imputation QC step, noting that by default hwe will not be done in cases (This is at the discretion of the user,  e.g. the analysis only includes cases,then this default does not make sense)
+ preimp_dir_12 --dis pts --popname mix --hwe_th_ca 1.0e-300 --keep "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects --out "$abbr"
+
+
+############ Imputation Step
+
+#We'll redo the files so that the rs-ids are updated, then check for redundant ones, then pull the redundant ones based on missingness
+ cd "$WORKING_DIR"/qc/imputation
+ mkdir id_updates
+
+#Remove symbolic links. We're going to replace this file with one with updated id names
+ rm pts_"$abbr"_mix_am-qc.*
+
+#Get missingness per marker
+ $plink_location --bfile ../pts_"$abbr"_mix_am-qc --missing --out id_updates/pts_"$abbr"_mix_am-qc_tmp1
+
+#Make an allele name update file 
+ Rscript --vanilla "$WORKING_DIR"/scripts/rsidupdate_for_impdir_v1_may5_2016.R ../pts_"$abbr"_mix_am-qc.bim id_updates/pts_"$abbr"_mix_am-qc_tmp1.lmiss "$WORKING_DIR"/"$illumina_snplist"_nodot_first
+
+#update allele names
+ $plink_location --bfile ../pts_"$abbr"_mix_am-qc  --update-name ../pts_"$abbr"_mix_am-qc.bim_allele_update --make-bed --out pts_"$abbr"_mix_am-qc 
+
+#Do imputations :: Note that the --popname is EUR, if the population you selected to --keep for HWE and build guessing has a better match in 1000 genomes, change to that population
+ imp_dirsub_57 --refdir /home/gwas/pgc-samples/hapmap_ref/impute2_ref/1000GP_Phase3_sr/subchr --keep  "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects --popname EUR --noclean --out "$abbr"imp  
+
+
