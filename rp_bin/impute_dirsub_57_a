@@ -55,8 +55,11 @@ use strict;
 #   UGER at broad
 
 #
-# Adam mar 31
+# version MANC - mar 31
 #   Added ability to run memory intensive jobs sequentailyl rather than in parallel
+#   Only --keep subjects used for reference alignment (if specified)
+#   dos2 step split into 2 steps
+#   Combine best guess chunks should be deleted
 #######################################
 
 
@@ -2293,8 +2296,8 @@ if ($prephase_done == 0) {
 	
 	$sjadir = $impute_dir;
 	$sjaname = "preph";
-	$sjatime = 2;
-#	$sjatime = 4 if ($preph_fini > 0);
+	$sjatime = 6; #Adam: I set the default to 6, 2 hours is just not enough for 15k subjects
+	#$sjatime = 4 if ($preph_fini > 0);
 	$sjamem = 4000;
 	@sjaarray = @preph_arr;
 
@@ -2616,11 +2619,17 @@ if ($imp2_done == 0) {
 	
 	$sjadir = $impute_dir;
 	$sjaname = "imp2";
-	$sjatime = 2;
-	$sjamem = 8000;
+	$sjatime = 6;
+	$sjamem = 16000;
+	$sjaparallel_jobs = 1; #sometimes this will need to be set to 0, because it has memory errors
 	if ($imp2_fini > 0) {
-	    $sjamem = 14000;
-#	    $sjatime = 4;
+	    $sjamem = 64000;
+	    $sjatime = 6;
+	if ($imp2_fini > 1) {
+	    $sjamem = 16000;
+	    $sjaparallel_jobs = 0;
+	    $sjatime = 8;
+	 }
 	}
 	@sjaarray = @imp2_arr;
 	
@@ -2931,7 +2940,8 @@ if ($dabg_done == 0) {
     }
 }
 
-
+if (2 < 1)
+{
 
 
 ##################################################################################################################################
@@ -3520,3 +3530,5 @@ $sjamem = 1000;
 
     
 &send_jobarray;
+
+}
