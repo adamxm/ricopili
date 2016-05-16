@@ -88,7 +88,7 @@ cd $WORKING_DIR
 
 #Run IBD to get a list of related subjects to remove
  $plink_location --bfile "$bfile_directory"/"$bfile" --maf 0.05 --geno 0.02 --mind 0.02 --indep-pairwise 50 5 0.2 --out temporary_files/"$bfile"_ibd
- $plink_location --bfile "$bfile_directory"/"$bfile" --extract  temporary_files/"$bfile"_ibd.prune.in --genome --min 0.2 --out  temporary_files/"$bfile"_ibd
+ $plink_location --bfile "$bfile_directory"/"$bfile" --mind 0.02 --extract  temporary_files/"$bfile"_ibd.prune.in --genome --min 0.2 --out  temporary_files/"$bfile"_ibd
  awk '{if(NR ==1) print "FID","IID"; else print $3,$4}' temporary_files/"$bfile"_ibd.genome > temporary_files/"$bfile"_ibd.remove
 
 #Combine the SNPweights ancestry calls
