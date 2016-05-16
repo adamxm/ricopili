@@ -19,6 +19,9 @@
 ##Path to folder (existing, you the user must make this folder!) where you would like all data to be analyzed and stored
  WORKING_DIR=/home/maihofer/NSS1
  
+##call into it
+ cd $WORKING_DIR
+
 ##Make a folder called starting_data and put your PLINK genotypes into it!
  mkdir starting_data
  
