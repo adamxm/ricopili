@@ -10,6 +10,7 @@ my $noc = 0;
 my $minsize= 1000;
 
 ###############################
+
 ### version 7 with plink2
 ###   removed all --maf 0
 ###   not working with --het and --hardy
@@ -35,7 +36,10 @@ my $minsize= 1000;
 ###
 ### version 12
 ###   with only_cases
-
+### version 12 manc - May 5, 2016
+###  option to select specific subjects for HWE 
+###  only these subjects will be used for GWAS QC step
+###  Fixed error - all subjects used to determine monomorphic markers
 #############################
 # write log-file
 #############################
@@ -908,10 +912,12 @@ my $allow = "--allow-no-sex";
 #my $assotdt = "--assoc";
 
 
-my $assotdt = "--keep $keep_hwe --assoc";
+my $assotdt = "--keep $keep_hwe --assoc"; # must recode so that keep is optional
+my $assotdt2 = "--assoc"; #Adam : added another --assoc variable so that way I could run two tests of association: 1 with the hwe step, 1 without
 
 
 $assotdt = "--tdt" if ($tdt == 1);
+$assotdt2 = "--tdt" if ($tdt == 1);
 
 
 
@@ -933,8 +939,8 @@ if ($noassoc) {
     print  "-> analysis without filter\n";
 if ($calc){
     unless (-e "$nofiprefix.imiss") {
-	my $sys = "$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb $assotdt --missing";
-	my $sys = "$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb $assotdt";  #Adam: The association test is decoupled from the other tests
+	my $sys = "$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb --missing";
+	my $sys = "$ploc/plink $allow --bfile $prefix --out $nofiprefix.tmp --geno 1 --mind 1 --noweb $assotdt";  #Adam: The association test is decoupled from the other tests. I think that this is for QQ plots
 
 #	print "$sys\n";
 #	exit;  
@@ -1582,7 +1588,9 @@ if ($calc) {
     unless ($noassoc) {
 	unless (-e "$fifiprefix.assoc") {
 	    &mysystem ("$fifi_base --out $fifiprefix.assotmp --freq");  
-	    &mysystem ("$fifi_base --out $fifiprefix.assotmp $assotdt --ci 0.95");  #Adam: Decouple association from frequency
+	    &mysystem ("$fifi_base --out $fifiprefix.assotmp $assotdt --ci 0.95");   #Adam: This is for association testing
+	    &mysystem ("$fifi_base --out $fifiprefix.assotmp2 $assotdt2 --ci 0.95"); #Adam: This is for searching for NAs
+
 	    
 #	print "assoc debug for se\n";
 #	exit;
@@ -1593,6 +1601,8 @@ if ($calc) {
 	    
 	    
 	    &mysystem ("mv $fifiprefix.assotmp.assoc $fifiprefix.assoc");
+	    &mysystem ("mv $fifiprefix.assotmp2.assoc $fifiprefix.assoc2");
+
 	}
     }
 
@@ -2218,10 +2228,10 @@ unless ($noassoc) {
 print  "-> analysis p-value present\n";
 push  @detex_files, "$fifiprefix.snpex.nassoc.detex.txt";
 unless (-e "$fifiprefix.snpex.nassoc.detex.txt" ) {
-    die $!."($fifiprefix.assoc)" unless open IN, "< $fifiprefix.assoc";
+    die $!."($fifiprefix.assoc2)" unless open IN, "< $fifiprefix.assoc2"; #Adam: changed to assoc2 test that includes all subjects
     die $!."($fifiprefix.snpex.nassoc.detex.txt.tmp)" unless open DX, "> $fifiprefix.snpex.nassoc.detex.txt.tmp";
 
-    print DX "SNP\tF_A\tF_U\tSNP_nassoc($fifiprefix.assoc)\n";
+    print DX "SNP\tF_A\tF_U\tSNP_nassoc($fifiprefix.assoc2)\n";
     <IN>;
 
 #    if ($noassoc) {
