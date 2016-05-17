@@ -6,14 +6,21 @@ amaihofer@ucsd.edu
 
 Installation:
 The user should download the ricopili files in rp_bin, then follow the instructions on
-https://sites.google.com/a/broadinstitute.org/ricopili/home to install ricopili
+https://sites.google.com/a/broadinstitute.org/ricopili/home 
+to install this version of ricopili (note: use the scripts from this github page, not from the ricopili website!)
 
-Download all scripts in the base directory as well, and follow the methods shown in in manc_master_01
-to run the pipeline
+Download all scripts in the base directory as well, and follow guidelines in manc_master_01 to run the pipeline
 
-The method requires some additional files that need to be downloaded (either from here or linked on the web - i.e. eigensoft, snpweights, and PLINK2)
+Addtl. notes:
+The method requires some additional files that need to be downloaded:
 
-The script is currently set up under the assumption that the user is working on LISA or a TORQUE computing cluster with similar job (e.g. node or memory requirement options in the qsub scripts) input variables to LISA.
+eigensoft (last tested with version on LISA) http://www.hsph.harvard.edu/alkes-price/software/
+snpweights (last tested with version 2.1) http://www.hsph.harvard.edu/alkes-price/software/
+PLINK2 (last tested with beta 335) https://www.cog-genomics.org/plink2
 
-The ancestry method detailed here assumes that the user is working on a TORQUE computing cluster. I can provide a version of the scripts that does not require a cluster if there is demand for it.
+The script is currently set up under the assumption that the user is working on LISA or a TORQUE computing cluster with similar job parameters (e.g. node or memory requirement options in the qsub parameters are the same as they are on LISA). It may run regardless,
+however certain hacks made for huge samples (i.e. running 1 job at a time on an entire node) won't work.
+
+The ancestry method contained here assumes that the user is working on a TORQUE computing cluster. I can provide a version of the scripts that does not require a cluster if there is demand for it.
+
 
