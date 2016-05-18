@@ -1,6 +1,6 @@
 Ricopili MANC
 
-V2 - May 18, 2016 - Removed MAF and info score quality filters for determining 'qc1' and 'qc1f' data. Removed 'bg' and 'bgs' genotype outputs
+V2 - May 18, 2016 - Removed MAF and info score quality filters for determining 'qc1' and 'qc1f' data. Removed 'bg' and 'bgs' genotype outputs. Removed parallel job modification (set to 0 after failure) setting from the imputation step of the imp_dirsub script.
 
 V1 - May 16, 2016 - Initial release 
 
