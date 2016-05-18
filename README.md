@@ -1,4 +1,5 @@
 Ricopili MANC
+V2 - May 18, 2016 - Removed MAF and info score quality filters for determining 'qc1' and 'qc1f' data. Removed 'bg' and 'bgs' genotype outputs
 V1 - May 16, 2016 - Initial release 
 
 Adam Maihofer 
@@ -17,6 +18,7 @@ The method requires some additional files that need to be downloaded:
 eigensoft (last tested with version on LISA) http://www.hsph.harvard.edu/alkes-price/software/
 snpweights (last tested with version 2.1) http://www.hsph.harvard.edu/alkes-price/software/
 PLINK2 (last tested with beta 335) https://www.cog-genomics.org/plink2
+
 
 The script is currently set up under the assumption that the user is working on LISA or a TORQUE computing cluster with similar job parameters (e.g. node or memory requirement options in the qsub parameters are the same as they are on LISA). It may run regardless,
 however certain hacks made for huge samples (i.e. running 1 job at a time on an entire node) won't work.
