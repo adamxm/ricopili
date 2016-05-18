@@ -2625,11 +2625,11 @@ if ($imp2_done == 0) {
 	if ($imp2_fini > 0) {
 	    $sjamem = 64000;
 	    $sjatime = 6;
-	if ($imp2_fini > 3) {
-	    $sjamem = 16000;
-	    $sjaparallel_jobs = 0;
-	    $sjatime = 8;
-	 }
+	#if ($imp2_fini > 3) {
+	#    $sjamem = 16000;
+	#    $sjaparallel_jobs = 0;
+	#    $sjatime = 8;
+	# }
 	}
 	@sjaarray = @imp2_arr;
 	
