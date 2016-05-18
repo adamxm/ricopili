@@ -1,4 +1,5 @@
 Ricopili MANC
+
 V2 - May 18, 2016 - Removed MAF and info score quality filters for determining 'qc1' and 'qc1f' data. Removed 'bg' and 'bgs' genotype outputs
 V1 - May 16, 2016 - Initial release 
 
