@@ -144,7 +144,7 @@ my $outdir_bgs = "$outdir/bgs";
 my $outdir_bgn = "$outdir/bgn";
 
 
-my @created = mkpath(   ## $created ?
+my @created = mkpath(   ## $created? 
 			$outdir,
 			{verbose => 0, mode => 0750},
     );
@@ -164,15 +164,15 @@ my @created = mkpath(   ## $created ?
 			{verbose => 0, mode => 0750},
     );
 
-@created = mkpath(   ## $created ?
-			$outdir_bg,
-			{verbose => 0, mode => 0750},
-    );
+#@created = mkpath(   ## $created ?
+#			$outdir_bg,
+#			{verbose => 0, mode => 0750},
+#    );
 
-@created = mkpath(   ## $created ?
-			$outdir_bgs,
-			{verbose => 0, mode => 0750},
-    );
+#@created = mkpath(   ## $created ?
+#			$outdir_bgs,
+#			{verbose => 0, mode => 0750},
+#    );
 
 @created = mkpath(   ## $created ?
 			$outdir_bgn,
@@ -674,21 +674,21 @@ close IOX;
 ## create bfile
 ################################
 
-if ($ntp > 0) {
-    my $sys = "$ploc/plink --tped $dosfile_tped --tfam $famfile --make-bed --out $dosfile.qc1";
-    &mysystem($sys);
-    &mysystem("cp $dosfile.qc1.bed $outdir/bg/");
-    &mysystem("cp $dosfile.qc1.bim $outdir/bg/");
-    &mysystem("cp $dosfile.qc1.fam $outdir/bg/");
-    
-}
-if ($ntps > 0){
-    my $sys = "$ploc/plink --tped $dosfile_tped_strict --tfam $famfile --make-bed --out $dosfile.qc2";
-    &mysystem($sys);
-    &mysystem("cp $dosfile.qc2.bed $outdir/bgs/");
-    &mysystem("cp $dosfile.qc2.bim $outdir/bgs/");
-    &mysystem("cp $dosfile.qc2.fam $outdir/bgs/");
-}
+#if ($ntp > 0) {
+#    my $sys = "$ploc/plink --tped $dosfile_tped --tfam $famfile --make-bed --out $dosfile.qc1";
+#    &mysystem($sys);
+#    &mysystem("cp $dosfile.qc1.bed $outdir/bg/");
+#    &mysystem("cp $dosfile.qc1.bim $outdir/bg/");
+#    &mysystem("cp $dosfile.qc1.fam $outdir/bg/");
+#    
+#}
+#if ($ntps > 0){
+#    my $sys = "$ploc/plink --tped $dosfile_tped_strict --tfam $famfile --make-bed --out $dosfile.qc2";
+#    &mysystem($sys);
+#    &mysystem("cp $dosfile.qc2.bed $outdir/bgs/");
+#    &mysystem("cp $dosfile.qc2.bim $outdir/bgs/");
+#    &mysystem("cp $dosfile.qc2.fam $outdir/bgs/");
+#}
 if ($ntpn > 0){
     my $sys = "$ploc/plink --tped $dosfile_tped_noqc --tfam $famfile --make-bed --out $dosfile.noqc";
     &mysystem($sys);
