@@ -1,5 +1,6 @@
 ###Ricopili Modified for Ancestry (MANC) master script
 
+#V2 - May 18, 2016 - Removed 'failed' SNP filters
 #V1 - May 16, 2016 - Initial release
 
 #This file contains step by step commands for how to run Ricopili MANC
