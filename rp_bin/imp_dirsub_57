@@ -2926,6 +2926,7 @@ if ($dabg_done == 0) {
 	$sjadir = $impute_dir;
 	$sjaname = "dabg";
 	$sjatime = 12; # have increased walltime and memory
+	$sjaparallel_jobs = 1; #set this back to the default
 #	$sjatime = 20 if ($dabg_fini == 0);
 	$sjamem = 12000; # have increased walltime and memory
 	$sjamaxpar = 100;
