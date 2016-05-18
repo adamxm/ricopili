@@ -148,6 +148,6 @@ cd "$WORKING_DIR"
  $plink_location --bfile ../pts_"$abbr"_mix_am-qc  --update-name ../pts_"$abbr"_mix_am-qc.bim_allele_update --make-bed --out pts_"$abbr"_mix_am-qc 
 
 #Do imputations :: Note that the --popname is EUR, if the population you selected to --keep for HWE and build guessing has a better match in 1000 genomes, change to that population
- imp_dirsub_57 --refdir /home/gwas/pgc-samples/hapmap_ref/impute2_ref/1000GP_Phase3_sr/subchr --keep  "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects --popname EUR --noclean --out "$abbr"imp  
+ imp_dirsub_57 --refdir /home/gwas/pgc-samples/hapmap_ref/impute2_ref/1000GP_Phase3_sr/subchr --keep  "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects --popname EUR --info_th 0 --freq_th 0 --noclean --out "$abbr"imp  
 
 
