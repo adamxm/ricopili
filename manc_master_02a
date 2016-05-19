@@ -123,6 +123,9 @@ cd "$WORKING_DIR"
  pop="eur"
  Rscript --vanilla scripts/make_hwe_file_v1_may5_2016.R qc/pts_"$abbr"_mix_am.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt "$pop" temporary_files/"$bfile"_ibd.remove
  
+ #For samples that passed QC, list all subjects within a given ancestry group 
+ Rscript --vanilla scripts/make_ancestries_files_v1_may19_2016.R qc/pts_"$abbr"_mix_am.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt  
+
 #Make sure the ancestry file exists (If this returns an error instead of giving you a file header, something has gone wrong)
  head "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects
 
