@@ -36,8 +36,12 @@ for (anc in anc_groups)
   output_file <- paste(ancestry_file,"_",anc,"_classifications.subjects",sep="")
 
   write.table(subset(dat_use,select=c(FIDL,IID)),output_file,quote=F,row.names=F)
-  print(paste(anc, "has this many controls/cases:"))
-  result <- table(dat_use$P)
-
-  print(result)
 }
+
+ datx <- merge(dat, ancestries,by=c("FID","IID"),suffixes=c("","_dontuse"))
+
+  print("control (1) and case (2) counts, by ancestry")
+  result <- table(datx$bestpop,datx$P)
+  
+  print(result)
+  
