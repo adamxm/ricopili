@@ -124,7 +124,7 @@ cd "$WORKING_DIR"
  Rscript --vanilla scripts/make_hwe_file_v1_may5_2016.R qc/pts_"$abbr"_mix_am.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt "$pop" temporary_files/"$bfile"_ibd.remove
  
  #For samples that passed QC, list all subjects within a given ancestry group 
- Rscript --vanilla scripts/make_ancestries_files_v1_may19_2016.R qc/pts_"$abbr"_mix_am.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt  
+ Rscript --vanilla scripts/make_ancestries_files_v2_may20_2016.R qc/pts_"$abbr"_mix_am.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt  
 
 #Make sure the ancestry file exists (If this returns an error instead of giving you a file header, something has gone wrong)
  head "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects
@@ -153,5 +153,17 @@ cd "$WORKING_DIR"
 
 #Do imputations :: Note that the --popname is EUR, if the population you selected to --keep for HWE and build guessing has a better match in 1000 genomes, change to that population
  imp_dirsub_57 --refdir /home/gwas/pgc-samples/hapmap_ref/impute2_ref/1000GP_Phase3_sr/subchr --keep  "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects --popname EUR --info_th 0 --freq_th 0 --noclean --out "$abbr"imp  
+
+### Do PCA within ancestry groups
+cd "$WORKING_DIR"/qc
+mkdir pca
+cd pca
+for popg in aam #List all populations you will analyze here
+do
+ #Subset to subjects in ancestry group to be analyzed
+ $plink_location --bfile "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc --keep "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$popg"_classifications.subjects --make-bed --out pts_"$abbr"_mix_am-qc-"$popg"
+ pcaer_20 --out pts_"$abbr"_mix_am-qc-"$popg"_pca  pts_"$abbr"_mix_am-qc-"$popg".bim
+done
+
 
 
