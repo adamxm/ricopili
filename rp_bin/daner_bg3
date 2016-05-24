@@ -690,7 +690,7 @@ close IOX;
 #    &mysystem("cp $dosfile.qc2.fam $outdir/bgs/");
 #}
 if ($ntpn > 0){
-    my $sys = "$ploc/plink --tped $dosfile_tped_noqc --tfam $famfile --make-bed --out $dosfile.noqc";
+    my $sys = "$ploc/plink --tped $dosfile_tped_noqc --tfam $famfile --maf 0.000000000001 --make-bed --out $dosfile.noqc";
     &mysystem($sys);
     &mysystem("cp $dosfile.noqc.bed $outdir/bgn/");
     &mysystem("cp $dosfile.noqc.bim $outdir/bgn/");
