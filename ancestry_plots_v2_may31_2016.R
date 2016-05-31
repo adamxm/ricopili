@@ -127,7 +127,9 @@ clustercenterpreds <- args[2]
  datam$color <- ifelse(datam$bestpop_oneweek == "fil", "black", datam$color)
  datam$color <- ifelse(datam$bestpop_oneweek == "pue", "#CC6699", datam$color)
 
-
+ pop_list <- c("aam", "afr", "csa", "eas", "eur","fil", "lat", "nat", "pue", "oce", "oth")
+ pop_listlong <- c("AfrAm/African","Alaska/NatAm","CS Asian", "East Asian (EA)", "European (EU)", "\"Filipino\"/EU-EA", "Latino/NatAm",  "Pacific Isl./Oceania", "\"Puerto Rican\"/3 way", "Other")
+ popcolors <- c(colorlist[1],"green",colorlist[7],colorlist[3],colorlist[2],"black",colorlist[5],colorlist[6],"#CC6699",colorlist[8])
 
 
 #Read reference data
@@ -142,14 +144,24 @@ clustercenterpreds <- args[2]
 
  pdf(paste(bfilepreds,'_pcs.pdf',sep=''),7,7)
 	#Plot PCs
-	plot(-datam$PC1,datam$PC2, col=datam$color, pch="x", cex=.75, xlim=c(-0.025,0.04), ylim=c(-0.03,0.025),xlab="PC1",ylab="PC2",cex.axis=1.25,cex.lab=1.45 )
+	plot(-datam$PC1,datam$PC2, col=datam$color,  pch="x", cex=.75, xlim=c(-0.025,0.04), ylim=c(-0.03,0.025),xlab="PC1",ylab="PC2",cex.axis=1.25,cex.lab=1.45)
 	 points(-refdat$PC1,refdat$PC2,col='black', bg=refdat$color, pch=21,cex=1.5)
+	 points(-refdat$PC1,refdat$PC2,col='black', bg=refdat$color, pch="R",cex=.75)
+
+       legend('bottomright',col=popcolors, legend=pop_listlong, pch=19,cex=.6)
 	plot(datam$PC2,datam$PC3, col=datam$color, pch="x", cex=.75 , xlim=c(-0.035,0.025), ylim=c(-0.105,0.11),xlab="PC2",ylab="PC3",cex.axis=1.25,cex.lab=1.45)
 	 points(refdat$PC2,refdat$PC3,col='black', bg=refdat$color, pch=21,cex=1.5)
+	 points(refdat$PC2,refdat$PC3,col='black', bg=refdat$color, pch="R",cex=.75)
+	legend('bottomright',col=popcolors, legend=pop_listlong, pch=19,cex=.6)
 	plot(-datam$PC1,datam$PC4, col=datam$color, pch="x", cex=.75 , xlim=c(-0.025,0.04), ylim=c(-0.075,0.02),xlab="PC1",ylab="PC4",cex.axis=1.25,cex.lab=1.45)
 	 points(-refdat$PC1,refdat$PC4,col='black', bg=refdat$color, pch=21,cex=1.5)
+	 points(-refdat$PC1,refdat$PC4,col='black', bg=refdat$color, pch="R",cex=.75)
+	legend('bottomright',col=popcolors, legend=pop_listlong, pch=19,cex=.6)
 	plot(-datam$PC1,datam$PC5, col=datam$color, pch="x", cex=.75 , xlim=c(-0.025,0.04), ylim=c(-0.15,0.025),xlab="PC1",ylab="PC5",cex.axis=1.25,cex.lab=1.45)
 	 points(-refdat$PC1,refdat$PC5,col='black', bg=refdat$color, pch=21,cex=1.5)
+	 points(-refdat$PC1,refdat$PC5,col='black', bg=refdat$color, pch="R",cex=.75)
+	legend('bottomright',col=popcolors, legend=pop_listlong, pch=19,cex=.6)
+
  dev.off()
 
 
