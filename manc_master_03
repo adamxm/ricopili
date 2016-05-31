@@ -97,7 +97,7 @@ cd $WORKING_DIR
 
 #Call into the ancestry folder, classify subject ancestry, produce an ancestry PC plot
  cd "$WORKING_DIR"/ancestry 
- Rscript --vanilla ../scripts/ancestry_plots_v1_may5_2016.R "$bfile".predpc_oneweek /home/maihofer/ricopili/SNPweights2.1/hgdp_kgp_merged_v3_jointsample_v4_k6.snpweightrefpanel_clustercenters.csv
+ Rscript --vanilla ../scripts/ancestry_plots_v2_may31_2016.R "$bfile".predpc_oneweek /home/maihofer/ricopili/SNPweights2.1/hgdp_kgp_merged_v3_jointsample_v4_k6.snpweightrefpanel_clustercenters.csv
 
 ### Preimputation QC
 
