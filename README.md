@@ -1,5 +1,7 @@
 Ricopili MANC
+
 V3a - May 31, 2016 - Ancestry plots now have legend
+
 V3 - May 20, 2016 - Now includes PCA calculation (within ancestry group)
 
 V2a - May 19, 2016 - Added an extra script that produces a list of subjects within each ancestry group
