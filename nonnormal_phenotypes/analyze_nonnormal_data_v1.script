@@ -1,0 +1,80 @@
+
+
+###Analyze the data (Testing!)
+
+
+#Rserve must be running !!!!
+
+
+#cd "$WORKING_DIR"/qc/imputation
+mkdir secondary_regression
+mkdir secondary_regression/temporary_files
+mkdir secondary_regression/plink_assoc
+
+#List of all genotype data to be analyzed
+ls bgn | grep .bim | sed 's/.bim//g' > secondary_regression/pts_"$abbr".tobe_analyze
+
+#For each file, write the PLINK code necessary to run the job
+phenotype_file_path=DNHS_May2016_pheno_CTcount_v1.pheno.txt
+covar_file_path=pts_dnhs_mix_am-qc-aam_pca_women.menv.mds_cov
+regression_file=ologit_rserve_v1_may25_2016.R
+
+cd secondary_regression
+
+
+#Make a phenotype file (Input should be a phenotype file and the name of the phenotype you would like to use in the analysis
+ 
+Rscript /home/cnieverg/DNHS/scripts/make_phenotype_file_v1_may25_2016.R "$WORKING_DIR"/qc/pts_"$abbr"_mix_am.fam $phenotype_file_path ChildhoodTraumaCount
+
+
+
+#Construct the job code. 
+
+#Write a PLINK command for every job
+echo "" > analyses.plink_commands
+IFS=$'\n'
+for file_name in $(cat pts_"$abbr".tobe_analyze) 
+do
+ #MUST USE PLINK1
+ echo "plink --noweb --bfile "$WORKING_DIR"/qc/imputation/dasuqc1_pts_dnhs_mix_am-qc.hg19.ch.fl/bgn/"$file_name" --out plink_assoc/"$file_name".regression --pheno "$phen_file_path".pheno_use --covar $covar_file_path --R $regression_file --out &" >> analyses.plink_commands
+done
+
+#Make a job code, where 'nodesize' processes will run on each node simultaneously
+job=1
+nodesize=15
+ncommands=$(wc -l analyses.plink_commands | awk '{print $1}' )
+for i in $(seq 1 $nodesize $ncommands )
+do 
+ echo $i
+     echo "
+        #PBS -N secondary_GWAS_"$abbr"
+        #PBS -l nodes=1:ppn="$nodesize"
+        #PBS -l walltime=2:00:00
+        #PBS -j oe
+        #PBS -V
+        #export R_LIBS="/home/cnieverg/ricopili/rlibs"
+
+        cd $PWD
+          " > temporary_files/ancjob"$job".pbs
+
+    #Now for each element of this job we're going to make parameter files for snpweights and a command to run snpweights
+    ix=$(($i+$nodesize))
+
+        for j in $(seq -w $i 1 $ix)
+        do
+          #Write the PLINK command to the file
+          sed "${j}q;d" analyses.plink_commands >> temporary_files/ancjob"$job".pbs
+        done
+     echo "wait" >> temporary_files/ancjob"$job".pbs #Add "wait" to the end so that all jobs finish prior to the script closing
+     job=$((job+1))
+done
+
+totjobs=$(($job - 1))
+for i in  $(seq 1 1 $totjobs)
+ do 
+ echo "Submitting job"
+ qsub temporary_files/ancjob"$i".pbs
+done
+
+
+
