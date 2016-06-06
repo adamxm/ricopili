@@ -1,5 +1,7 @@
 Ricopili MANC
 
+V3b - Jun 6, 2016 - Reference data cluster centers variable may have pointed to wrong location, now fixed.
+
 V3a - May 31, 2016 - Ancestry plots now have legend
 
 V3 - May 20, 2016 - Now includes PCA calculation (within ancestry group)
