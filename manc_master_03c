@@ -1,4 +1,5 @@
 ###Ricopili Modified for Ancestry (MANC) master script
+#V3c - Jun 7, 2016 - Updated annotations to be more clear. List of subjects of each ancestry after QC was not done corrected (showed pre-qc N)
 #V3b - Jun 6, 2016 - Made some variable paths correct, changed location of IBD step
 #V2 - May 18, 2016 - Removed 'failed' SNP filters
 #V1 - May 16, 2016 - Initial release
@@ -14,10 +15,12 @@
 #This is currently only set up for LISA 
 #(or, given additional configurations, a computing system with TORQUE on it)
 
+#Also note that this was made under the assumption that the analyst initials (set during ricopili conf)
+are 'am' and that the disease (three letter) is pts.
 
 ###Initial configuration steps
 
-##Path to folder (existing, you the user must make this folder!) where you would like all data to be analyzed and stored
+##Path to working directory (Folder must exist. You the user must make this folder!) where you would like all data to be analyzed and stored
  WORKING_DIR=/home/maihofer/NSS1
  
 ##call into it
@@ -104,67 +107,75 @@ cd $WORKING_DIR
 cd "$WORKING_DIR"
 
 
-#Make a copy of the data into the base directory. Update the phenotype and gender of all subjects at this point if necessary.
+#Makes a copy of the data into the base directory. Update the phenotype and sex of all subjects at this point if necessary.
 #If that is not necessary, remove --update-sex "$gender_filepath" --pheno "$phenotype_filepath" from this command!
  $plink_location --bfile "$bfile_directory"/"$bfile" --update-sex "$gender_filepath" --pheno "$phenotype_filepath" --make-bed --out "$abbr"
  
 #Run the first step of pre-imputation, which guesses the genotyping platform and gives subjects names
- preimp_dir_12_getids --dis pts --popname mix --out "$abbr" #Is setting HWE at this step necessary?
+ preimp_dir_12_getids --dis pts --popname mix --out "$abbr" 
 
-#Now I have the IDs that will be used. Make --keep file using this, the ancestry determination, and IBD info.
+#Now I have the IDs that will be used. Make file for PLINK of IDs to keep using this, the ancestry determination, and IBD info.
 
 #Run IBD to get a list of related subjects to remove
  $plink_location --bfile "$bfile_directory"/"$bfile" --maf 0.05 --geno 0.02 --mind 0.02 --indep-pairwise 50 5 0.2 --out temporary_files/"$bfile"_ibd
  $plink_location --bfile "$bfile_directory"/"$bfile" --mind 0.02 --extract  temporary_files/"$bfile"_ibd.prune.in --genome --min 0.2 --out  temporary_files/"$bfile"_ibd
  awk '{if(NR ==1) print "FID","IID"; else print $3,$4}' temporary_files/"$bfile"_ibd.genome > temporary_files/"$bfile"_ibd.remove
 
-#To the user: Examine the ancestry file and find the largest homogenous ethnic group, and filter out subjects for IBD
-
-#If N < 200, take largest two-way admixed group
+#To the user: Examine the ancestry files (i.e. in the ancestry folder, the file with suffix _ancestries_samplesizes.txt) 
+#and find the largest homogenous ancestry group. If N < 200, take largest two-way admixed group.
 #This list of subjects will be used for certain QC steps and strand alignment steps!!
 
 #Write down the population name here. Can be one of either: 
 #eur (european), csa (central-south asian), eas (east asian), aam (African American), 
 #lat (latino), nat (Native American/Alaska Native), pue (Puerto Rican -like), oce (Oceanian), fil (filipino -like)
  pop="eur"
+ 
+#This script will take your designated population and filter out related subjects
  Rscript --vanilla scripts/make_hwe_file_v1_may5_2016.R qc/pts_"$abbr"_mix_am.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt "$pop" temporary_files/"$bfile"_ibd.remove
  
- #For samples that passed QC, list all subjects within a given ancestry group 
- Rscript --vanilla scripts/make_ancestries_files_v2_may20_2016.R qc/pts_"$abbr"_mix_am.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt  
-
-#Make sure the ancestry file exists (If this returns an error instead of giving you a file header, something has gone wrong)
+#Make sure the file listing unrelateds of a given ancestry actually exists (If this returns an error instead of giving you a file header, something has gone wrong)
  head "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects
 
-#Run the pre-imputation QC step, noting that by default hwe will not be done in cases (This is at the discretion of the user,  e.g. the analysis only includes cases,then this default does not make sense)
+#Run the pre-imputation QC step, noting that by default hwe will not be done in cases (This is at the discretion of the user,  i.e. if the analysis only includes cases,then this default does not make sense)
  preimp_dir_12 --dis pts --popname mix --hwe_th_ca 1.0e-300 --keep "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects --out "$abbr"
+
+#User: Check the QC report that the pre-imputation step generated, make sure it's acceptable before proceeding to imputation
+
+#For samples that passed QC, list all subjects within a given ancestry group 
+ Rscript --vanilla scripts/make_ancestries_files_v2_may20_2016.R qc/pts_"$abbr"_mix_am-qc.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt  
 
 
 ############ Imputation Step
 
-#We'll redo the files so that the rs-ids are updated, then check for redundant ones, then pull the redundant ones based on missingness
+#Call to the directory where imputation will be done
  cd "$WORKING_DIR"/qc/imputation
+
+##Update loci name to rs-id, then check for redundant  rsids, then pull the redundant ones based on missingness
+
+#Make a directory where updated missingness info and allele name updates will go
  mkdir id_updates
 
-#Remove symbolic links. We're going to replace this file with one with updated id names
- rm pts_"$abbr"_mix_am-qc.*
-
 #Get missingness per marker
- $plink_location --bfile ../pts_"$abbr"_mix_am-qc --missing --out id_updates/pts_"$abbr"_mix_am-qc_tmp1
+ $plink_location --bfile "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc --missing --out id_updates/pts_"$abbr"_mix_am-qc_tmp1
 
-#Make an allele name update file 
- Rscript --vanilla "$WORKING_DIR"/scripts/rsidupdate_for_impdir_v1_may5_2016.R ../pts_"$abbr"_mix_am-qc.bim id_updates/pts_"$abbr"_mix_am-qc_tmp1.lmiss "$WORKING_DIR"/"$illumina_snplist"_nodot_first
+#Make rs-id name update file 
+ Rscript --vanilla "$WORKING_DIR"/scripts/rsidupdate_for_impdir_v1_may5_2016.R "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc.bim id_updates/pts_"$abbr"_mix_am-qc_tmp1.lmiss "$WORKING_DIR"/"$illumina_snplist"_nodot_first
 
-#update allele names
- $plink_location --bfile ../pts_"$abbr"_mix_am-qc  --update-name ../pts_"$abbr"_mix_am-qc.bim_allele_update --make-bed --out pts_"$abbr"_mix_am-qc 
+#update loci names to rs-ids
+ $plink_location --bfile "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc  --update-name "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc.bim_allele_update --make-bed --out pts_"$abbr"_mix_am-qc 
+ 
+#Do imputations :: Note that the --popname parameter by default is EUR, which will do strand alignment based on comparing your data to KGP EUR population
+#Recommand using the same population you used for HWE for the --keep parameter
+#You should select the KGP population that most closely matches this population (i.e. if you used european ancestry subjects for HWE, use them again here, and use the EUR population to match to
 
-#Do imputations :: Note that the --popname is EUR, if the population you selected to --keep for HWE and build guessing has a better match in 1000 genomes, change to that population
+
  imp_dirsub_57 --refdir /home/gwas/pgc-samples/hapmap_ref/impute2_ref/1000GP_Phase3_sr/subchr --keep  "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects --popname EUR --info_th 0 --freq_th 0 --noclean --out "$abbr"imp  
 
 ### Do PCA within ancestry groups
 cd "$WORKING_DIR"/qc
 mkdir pca
 cd pca
-for popg in aam #List all populations you will analyze here
+for popg in aam #List all ancestry groups you will analyze here (as a space delimited list of 3 letter population abbreviations, e.g. aam nat eur and so on)
 do
  #Subset to subjects in ancestry group to be analyzed
  $plink_location --bfile "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc --keep "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$popg"_classifications.subjects --make-bed --out pts_"$abbr"_mix_am-qc-"$popg"
