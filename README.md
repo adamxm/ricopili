@@ -2,7 +2,7 @@ Ricopili MANC Version 3e
 Adam Maihofer 
 amaihofer@ucsd.edu
 
-Version history
+Version History
 V3e - Jun 15, 2016 -  Analyst initials and disease name no longer hard coded
 V3d - Jun 15, 2016 - Included PCA and GWAS steps in the master script
 V3c - Jun 7, 2016 - Updated master script for interpretability
