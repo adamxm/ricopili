@@ -1,5 +1,7 @@
 Ricopili MANC
 
+V3d - Jun 15, 2016 - Included PCA and GWAS steps in the master script
+
 V3c - Jun 7, 2016 - Updated master script for interpretability
 
 V3b - Jun 6, 2016 - Reference data cluster centers variable may have pointed to wrong location, now fixed.
