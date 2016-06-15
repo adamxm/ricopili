@@ -1,24 +1,18 @@
-Ricopili MANC
-V3e - Jun 15, 2016 -  Analyst initials and disease name no longer hard coded
-
-V3d - Jun 15, 2016 - Included PCA and GWAS steps in the master script
-
-V3c - Jun 7, 2016 - Updated master script for interpretability
-
-V3b - Jun 6, 2016 - Reference data cluster centers variable may have pointed to wrong location, now fixed.
-
-V3a - May 31, 2016 - Ancestry plots now have legend
-
-V3 - May 20, 2016 - Now includes PCA calculation (within ancestry group)
-
-V2a - May 19, 2016 - Added an extra script that produces a list of subjects within each ancestry group
-
-V2 - May 18, 2016 - Removed MAF and info score quality filters for determining 'qc1' and 'qc1f' data. Removed 'bg' and 'bgs' genotype outputs. Removed parallel job modification (set to 0 after failure) setting from the imputation step of the imp_dirsub script.
-
-V1 - May 16, 2016 - Initial release 
-
+Ricopili MANC Version 3e 
 Adam Maihofer 
 amaihofer@ucsd.edu
+
+Version history
+V3e - Jun 15, 2016 -  Analyst initials and disease name no longer hard coded
+V3d - Jun 15, 2016 - Included PCA and GWAS steps in the master script
+V3c - Jun 7, 2016 - Updated master script for interpretability
+V3b - Jun 6, 2016 - Reference data cluster centers variable may have pointed to wrong location, now fixed.
+V3a - May 31, 2016 - Ancestry plots now have legend
+V3 - May 20, 2016 - Now includes PCA calculation (within ancestry group)
+V2a - May 19, 2016 - Added an extra script that produces a list of subjects within each ancestry group
+V2 - May 18, 2016 - Removed MAF and info score quality filters for determining 'qc1' and 'qc1f' data. Removed 'bg' and 'bgs' genotype outputs. Removed parallel job modification (set to 0 after failure) setting from the imputation step of the imp_dirsub script.
+V1 - May 16, 2016 - Initial release
+
 
 Installation:
 The user should download the ricopili files in rp_bin, then follow the instructions on
