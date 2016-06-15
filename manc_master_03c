@@ -1,4 +1,5 @@
 ###Ricopili Modified for Ancestry (MANC) master script
+#V3d - Jun 15, 2016 -Include PCA and analysis steps
 #V3c - Jun 7, 2016 - Updated annotations to be more clear. List of subjects of each ancestry after QC was not done corrected (showed pre-qc N)
 #V3b - Jun 6, 2016 - Made some variable paths correct, changed location of IBD step
 #V2 - May 18, 2016 - Removed 'failed' SNP filters
@@ -171,16 +172,35 @@ cd "$WORKING_DIR"
 
  imp_dirsub_57 --refdir /home/gwas/pgc-samples/hapmap_ref/impute2_ref/1000GP_Phase3_sr/subchr --keep  "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects --popname EUR --info_th 0 --freq_th 0 --noclean --out "$abbr"imp  
 
-### Do PCA within ancestry groups
+############ Do PCA within ancestry groups
 cd "$WORKING_DIR"/qc
 mkdir pca
 cd pca
-for popg in aam #List all ancestry groups you will analyze here (as a space delimited list of 3 letter population abbreviations, e.g. aam nat eur and so on)
+for popg in eur all #User: List all populations you will analyze here as a space delimited list
 do
  #Subset to subjects in ancestry group to be analyzed
- $plink_location --bfile "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc --keep "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$popg"_classifications.subjects --make-bed --out pts_"$abbr"_mix_am-qc-"$popg"
+ keep_command=""
+ if [ $popg != "all" ]
+  then
+   keep_command="--keep "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$popg"_classifications.subjects"
+  fi
+ $plink_location --bfile "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc $keep_command --make-bed --out pts_"$abbr"_mix_am-qc-"$popg"
  pcaer_20 --out pts_"$abbr"_mix_am-qc-"$popg"_pca  pts_"$abbr"_mix_am-qc-"$popg".bim
 done
+
+############ Do analysis
+
+cd "$WORKING_DIR"/qc/imputation/
+
+
+for popg in eur # all #List all populations you will analyze here
+do
+ #Make a copy of the PCA covariate
+ cp "$WORKING_DIR"/qc/pca/pts_"$abbr"_mix_am-qc-"$popg"_pca.menv.mds_cov ./
+ #Run analysis. User: Specify the PCA covariates you want to include (default 1,2,3,4,5)
+ postimp_navi_18 --out "$abbr"_"$popg" --mds pts_"$abbr"_mix_am-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --addout analysis_run1 --nocon --nohet
+done
+
 
 
 
