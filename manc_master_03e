@@ -1,9 +1,10 @@
 ###Ricopili Modified for Ancestry (MANC) master script
-#V3d - Jun 15, 2016 -Include PCA and analysis steps
-#V3c - Jun 7, 2016 - Updated annotations to be more clear. List of subjects of each ancestry after QC was not done corrected (showed pre-qc N)
-#V3b - Jun 6, 2016 - Made some variable paths correct, changed location of IBD step
-#V2 - May 18, 2016 - Removed 'failed' SNP filters
-#V1 - May 16, 2016 - Initial release
+#V3e - Jun 15, 2016 - Analyst initials and disease name no longer hard coded
+#V3d - Jun 15, 2016 - Include PCA and analysis steps
+#V3c - Jun 7, 2016 -  Updated annotations to be more clear. List of subjects of each ancestry after QC was not done corrected (showed pre-qc N)
+#V3b - Jun 6, 2016 -  Made some variable paths correct, changed location of IBD step
+#V2 - May 18, 2016 -  Removed 'failed' SNP filters
+#V1 - May 16, 2016 -  Initial release
 
 #This file contains step by step commands for how to run Ricopili MANC
 #It is essentially the same as what you would do for Ricopili, but with some
@@ -15,9 +16,6 @@
 
 #This is currently only set up for LISA 
 #(or, given additional configurations, a computing system with TORQUE on it)
-
-#Also note that this was made under the assumption that the analyst initials (set during ricopili conf)
-are 'am' and that the disease (three letter) is pts.
 
 ###Initial configuration steps
 
@@ -67,6 +65,10 @@ snpweight_clustercenters=/home/maihofer/ricopili/SNPweights2.1/hgdp_kgp_merged_v
  
 #abbreviation (exactly 4 characters) for the study name
  abbr=nss1
+#Enter disease name (3 characters) for the disease studied
+ dis=pts
+#Enter analyst initials (initials that you specified when you installed ricopili using ./rp_config
+ an=am
 
 #Give path of Illumina SNP ID to rs-id conversion table. Illumina provides these in the 
 #Go to the kit support page for the array, click downloads, then click ArrayNameHere support files
@@ -113,7 +115,7 @@ cd "$WORKING_DIR"
  $plink_location --bfile "$bfile_directory"/"$bfile" --update-sex "$gender_filepath" --pheno "$phenotype_filepath" --make-bed --out "$abbr"
  
 #Run the first step of pre-imputation, which guesses the genotyping platform and gives subjects names
- preimp_dir_12_getids --dis pts --popname mix --out "$abbr" 
+ preimp_dir_12_getids --dis "$dis" --popname mix --out "$abbr" 
 
 #Now I have the IDs that will be used. Make file for PLINK of IDs to keep using this, the ancestry determination, and IBD info.
 
@@ -132,18 +134,18 @@ cd "$WORKING_DIR"
  pop="eur"
  
 #This script will take your designated population and filter out related subjects
- Rscript --vanilla scripts/make_hwe_file_v1_may5_2016.R qc/pts_"$abbr"_mix_am.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt "$pop" temporary_files/"$bfile"_ibd.remove
+ Rscript --vanilla scripts/make_hwe_file_v1_may5_2016.R qc/"$dis"_"$abbr"_mix_"$an".fam ancestry/"$bfile".predpc_oneweek_ancestries.txt "$pop" temporary_files/"$bfile"_ibd.remove
  
 #Make sure the file listing unrelateds of a given ancestry actually exists (If this returns an error instead of giving you a file header, something has gone wrong)
  head "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects
 
 #Run the pre-imputation QC step, noting that by default hwe will not be done in cases (This is at the discretion of the user,  i.e. if the analysis only includes cases,then this default does not make sense)
- preimp_dir_12 --dis pts --popname mix --hwe_th_ca 1.0e-300 --keep "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects --out "$abbr"
+ preimp_dir_12 --dis "$dis" --popname mix --hwe_th_ca 1.0e-300 --keep "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects --out "$abbr"
 
 #User: Check the QC report that the pre-imputation step generated, make sure it's acceptable before proceeding to imputation
 
 #For samples that passed QC, list all subjects within a given ancestry group 
- Rscript --vanilla scripts/make_ancestries_files_v2_may20_2016.R qc/pts_"$abbr"_mix_am-qc.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt  
+ Rscript --vanilla scripts/make_ancestries_files_v2_may20_2016.R qc/"$dis"_"$abbr"_mix_"$an"-qc.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt  
 
 
 ############ Imputation Step
@@ -157,13 +159,13 @@ cd "$WORKING_DIR"
  mkdir id_updates
 
 #Get missingness per marker
- $plink_location --bfile "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc --missing --out id_updates/pts_"$abbr"_mix_am-qc_tmp1
+ $plink_location --bfile "$WORKING_DIR"/qc/"$dis"_"$abbr"_mix_"$an"-qc --missing --out id_updates/"$dis"_"$abbr"_mix_"$an"-qc_tmp1
 
 #Make rs-id name update file 
- Rscript --vanilla "$WORKING_DIR"/scripts/rsidupdate_for_impdir_v1_may5_2016.R "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc.bim id_updates/pts_"$abbr"_mix_am-qc_tmp1.lmiss "$WORKING_DIR"/"$illumina_snplist"_nodot_first
+ Rscript --vanilla "$WORKING_DIR"/scripts/rsidupdate_for_impdir_v1_may5_2016.R "$WORKING_DIR"/qc/"$dis"_"$abbr"_mix_"$an"-qc.bim id_updates/"$dis"_"$abbr"_mix_"$an"-qc_tmp1.lmiss "$WORKING_DIR"/"$illumina_snplist"_nodot_first
 
 #update loci names to rs-ids
- $plink_location --bfile "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc  --update-name "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc.bim_allele_update --make-bed --out pts_"$abbr"_mix_am-qc 
+ $plink_location --bfile "$WORKING_DIR"/qc/"$dis"_"$abbr"_mix_"$an"-qc  --update-name "$WORKING_DIR"/qc/"$dis"_"$abbr"_mix_"$an"-qc.bim_allele_update --make-bed --out "$dis"_"$abbr"_mix_"$an"-qc 
  
 #Do imputations :: Note that the --popname parameter by default is EUR, which will do strand alignment based on comparing your data to KGP EUR population
 #Recommand using the same population you used for HWE for the --keep parameter
@@ -184,8 +186,8 @@ do
   then
    keep_command="--keep "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$popg"_classifications.subjects"
   fi
- $plink_location --bfile "$WORKING_DIR"/qc/pts_"$abbr"_mix_am-qc $keep_command --make-bed --out pts_"$abbr"_mix_am-qc-"$popg"
- pcaer_20 --out pts_"$abbr"_mix_am-qc-"$popg"_pca  pts_"$abbr"_mix_am-qc-"$popg".bim
+ $plink_location --bfile "$WORKING_DIR"/qc/"$dis"_"$abbr"_mix_"$an"-qc $keep_command --make-bed --out "$dis"_"$abbr"_mix_"$an"-qc-"$popg"
+ pcaer_20 --out "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca  "$dis"_"$abbr"_mix_"$an"-qc-"$popg".bim
 done
 
 ############ Do analysis
@@ -196,9 +198,9 @@ cd "$WORKING_DIR"/qc/imputation/
 for popg in eur # all #List all populations you will analyze here
 do
  #Make a copy of the PCA covariate
- cp "$WORKING_DIR"/qc/pca/pts_"$abbr"_mix_am-qc-"$popg"_pca.menv.mds_cov ./
+ cp "$WORKING_DIR"/qc/pca/"$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov ./
  #Run analysis. User: Specify the PCA covariates you want to include (default 1,2,3,4,5)
- postimp_navi_18 --out "$abbr"_"$popg" --mds pts_"$abbr"_mix_am-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --addout analysis_run1 --nocon --nohet
+ postimp_navi_18 --out "$abbr"_"$popg" --mds "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --addout analysis_run1 --nocon --nohet
 done
 
 
