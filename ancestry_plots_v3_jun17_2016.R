@@ -111,9 +111,9 @@ clustercenterpreds <- args[2]
        datam$FID <- NA
 	datam$IID <- NA
 	datam[,c("FID","IID")] <- t(sapply(datam$FID_IID,unlist_split,split=":"))
-       write.table(datam, paste(bfilepreds,'.header',sep=''),row.names=F,quote=F) #Write predPC out to a file with a header
        datam$bestpop_oneweek <- apply(datam[,9:14], 1, popassign2)
-
+       write.table(datam, paste(bfilepreds,'.header',sep=''),row.names=F,quote=F) #Write predPC out to a file with a header
+       
 
  datam$color <- colorlist[8]
 
