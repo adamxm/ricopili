@@ -3,6 +3,8 @@ Adam Maihofer
 amaihofer@ucsd.edu
 
 Version History
+V3f - Jun 17, 2016 -  Ancestry .predpc files now given header
+
 V3e - Jun 15, 2016 -  Analyst initials and disease name no longer hard coded
 
 V3d - Jun 15, 2016 - Included PCA and GWAS steps in the master script
