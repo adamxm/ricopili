@@ -1,4 +1,6 @@
 #Call ancestry in all subjects, using R
+#V3 - Jun 17, 2016 - Export predpc file with header
+#V2 - May 31, 2016 - Made plots and outputs pretty
 #V1 - May 5 2016 - Initial release 
 
    	#WR colorlist
@@ -105,11 +107,11 @@ clustercenterpreds <- args[2]
 
 	datam <- read.table(bfilepreds, header=F,stringsAsFactors=F,na.strings=c("#N/A"))
 	names(datam) <- c("FID_IID","affection", "markers","PC1","PC2","PC3","PC4","PC5","europe", "oceania", "africa", "americas", "cs_asia", "e_asia")
-
+	
        datam$FID <- NA
 	datam$IID <- NA
 	datam[,c("FID","IID")] <- t(sapply(datam$FID_IID,unlist_split,split=":"))
-	 
+       write.table(datam, paste(bfilepreds,'.header',sep=''),row.names=F,quote=F) #Write predPC out to a file with a header
        datam$bestpop_oneweek <- apply(datam[,9:14], 1, popassign2)
 
 
