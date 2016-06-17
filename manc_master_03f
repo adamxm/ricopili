@@ -1,4 +1,5 @@
 ###Ricopili Modified for Ancestry (MANC) master script
+#V3f - Jun 17, 2016 - Ancestry .predpc files now exported with header
 #V3e - Jun 15, 2016 - Analyst initials and disease name no longer hard coded
 #V3d - Jun 15, 2016 - Include PCA and analysis steps
 #V3c - Jun 7, 2016 -  Updated annotations to be more clear. List of subjects of each ancestry after QC was not done corrected (showed pre-qc N)
@@ -102,7 +103,7 @@ cd $WORKING_DIR
 
 #Call into the ancestry folder, classify subject ancestry, produce an ancestry PC plot
  cd "$WORKING_DIR"/ancestry 
- Rscript --vanilla "$WORKING_DIR"/scripts/ancestry_plots_v2_may31_2016.R "$bfile".predpc_oneweek "$snpweight_clustercenters"
+ Rscript --vanilla "$WORKING_DIR"/scripts/ancestry_plots_v3_jun17_2016.R "$bfile".predpc_oneweek "$snpweight_clustercenters"
 
 ### Preimputation QC
 
