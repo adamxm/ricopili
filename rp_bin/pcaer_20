@@ -44,7 +44,7 @@ my $loloc = &trans("loloc");
 ##      ARGV into file
 ##      bug with splitting into npa (needed to be done twice)
 ## v19: serial
-
+##Adam June 21, 2016: set chunk size to 30000 
 my $txt_tmp ='
 Assessing common ancestry and stratification with genome-wide SNPs. 
 To assess relatedness between samples and population stratification, we used the chip-wide SNP data 
@@ -163,7 +163,7 @@ my $walltime = 1;
 
 my $ld_subgr = 1000;   ## number of IDs to do ld-estimation on
 
-my $chunk_size = 200;   #### for chunks in epca creation -> should bring same results, only parallelization
+my $chunk_size = 30000;   #### for chunks in epca creation -> should bring same results, only parallelization
 my $nref = 4000;  ## number IDs in reference PCA set (random subgroup)
 
 
