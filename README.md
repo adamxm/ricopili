@@ -3,6 +3,8 @@ Adam Maihofer
 amaihofer@ucsd.edu
 
 Version History
+V3g - Jun 20, 2016 - pcs are no longer based on projection
+
 V3f - Jun 17, 2016 -  Ancestry .predpc files now given header
 
 V3e - Jun 15, 2016 -  Analyst initials and disease name no longer hard coded
