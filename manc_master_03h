@@ -1,5 +1,6 @@
 ###Ricopili Modified for Ancestry (MANC) master script
 
+#V3h - Jul 06, 2016 - Association anaylsis phenotype now directly specified to prevent error
 #V3g - Jun 20, 2016 - pcs are no longer based on projection
 #V3f - Jun 17, 2016 - Ancestry .predpc files now exported with header
 #V3e - Jun 15, 2016 - Analyst initials and disease name no longer hard coded
@@ -202,8 +203,10 @@ for popg in eur # all #List all populations you will analyze here
 do
  #Make a copy of the PCA covariate
  cp "$WORKING_DIR"/qc/pca/"$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov ./
+ #Use the QCed data phenotype, because currently a bug changes the dosage data phenotype from missing to controls
+ awk '{print $1,$2,$6}' "$dis"_"$abbr"_mix_"$an"-qc.fam > "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno
  #Run analysis. User: Specify the PCA covariates you want to include (default 1,2,3,4,5)
- postimp_navi_18 --out "$abbr"_"$popg" --mds "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --addout analysis_run1 --nocon --nohet 
+ postimp_navi_18 --out "$abbr"_"$popg" --mds "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --pheno "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno --addout analysis_run2 --nocon --nohet 
 done
 
 
