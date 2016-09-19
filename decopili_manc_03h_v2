@@ -1,4 +1,6 @@
+#!/bin/sh
 ###Ricopili Modified for Ancestry (MANC) master script
+#V3h3 -Sep 15, 2016 - Designed to run without calling on the Ricopili mother scripts - Completes through analysis step
 #V3h2 -Aug 04, 2016 - Designed to run without calling on the Ricopili mother scripts (preimp_dir and imp_dir)
 #V3h - Jul 06, 2016 - Association anaylsis phenotype now directly specified to prevent error
 #V3g - Jun 20, 2016 - pcs are no longer based on projection
@@ -24,9 +26,12 @@
 ###Initial configuration steps
 
 ##Path to working directory (Folder must exist. You the user must make this folder!) where you would like all data to be analyzed and stored
- WORKING_DIR=/mnt/sdb/genetics/rptest_forbeth
+ WORKING_DIR=your_directory_here
  
-##call into it
+##Path to applications
+ APPS_BIN=/share/apps/bin
+
+##call into it WD
  cd $WORKING_DIR
 
 ##Make a folder called starting_data and put your PLINK genotypes into it!
@@ -39,70 +44,78 @@
 ##Make a folder called scripts and put the following scripts into it: call_ancestry_v2_may6_2016.sh, ancestry_plots_v1_may5_2016.R, make_rsid_update_file_v1_may5_2016.R, rsidupdate_for_impdir_v1_may5_2016.R, make_hwe_file_v1_may5_2016.R
  mkdir scripts
  
- 
 ##Specify the locations of the other input files.
 
 #Give the location of the PLINK 2 binary
- plink_location=/mnt/sdb/genetics/ricopili/plink2/plink
+ plink_location=$APPS_BIN/plink
 
 #Write the name of the PLINK bed/bim/fam 
- bfile=pgbd_unfiltered
+ bfile=mergefinal
 
 #Give the folder where this PLINK binary is stored 
  bfile_directory="$WORKING_DIR"/starting_data
 
 #Location of the list of ancestry panel SNP rsids
- snpweights_snplist=/mnt/sdb/genetics/ricopili/SNPweights2.1/hgdp_kgp_merged_v3_jointsample_v4_k6.snplist
+ snpweights_snplist="$WORKING_DIR"/SNPweights2.1/hgdp_kgp_merged_v3_jointsample_v4_k6.snplist
  
 #Location of ancestry panel
- snpweightfile_path=/mnt/sdb/genetics/ricopili/SNPweights2.1/hgdp_kgp_merged_v3_jointsample_v4_k6.snpweightrefpanel
+ snpweightfile_path="$WORKING_DIR"/SNPweights2.1/hgdp_kgp_merged_v3_jointsample_v4_k6.snpweightrefpanel
  
 #Location of ancestry panel cluster centers
-snpweight_clustercenters=/mnt/sdb/genetics/ricopili/SNPweights2.1/hgdp_kgp_merged_v3_jointsample_v4_k6.snpweightrefpanel_clustercenters.csv
+ snpweight_clustercenters="$WORKING_DIR"/SNPweights2.1/hgdp_kgp_merged_v3_jointsample_v4_k6.snpweightrefpanel_clustercenters.csv
 
 #Location of SNPweights (see http://www.hsph.harvard.edu/alkes-price/software/)
- snpweights_path=/mnt/sdb/genetics/ricopili/SNPweights2.1/inferancestry.py
- 
+ snpweights_path=/share/apps/bin/rp_bin/inferancestry.py
  
 #Location of convertf tool from EIGENSOFT (http://www.hsph.harvard.edu/alkes-price/software/)
- eigensoft_loc=/mnt/sdb/genetics/ricopili/EIG5.0.2/bin/convertf
+ eigensoft_loc=$APPS_BIN/convertf
 
 #New: Location of imputation reference file directory here
- refdir=/mnt/sdb/genetics/ricopili/impute_v2.3.1_x86_64_static/refs/impute2_ref/1KG_Aug12/1000G_phase3/subchr
+ refdir=/usr/analysis/data/ngs_references/imputation_reference/1KG_Aug12/1000G_phase3/subchr
 
 #New: Reference population name here. Default is EUR for European. Recommand using the same population you used for HWE for the --keep parameter
  refpopname=EUR
 
 #New: Set number of cores on each node (for multithreading)
- ncore=6
-
+ ncore=2
  
 #abbreviation (exactly 4 characters) for the study name
- abbr=pggg
+ abbr=STUD
 #Enter disease name (3 characters) for the disease studied
- dis=pts
-#Enter analyst initials (initials that you specified when you installed ricopili using ./rp_config
- an=am
+ dis=PTS
+#Enter analyst initials (init line in ricopili.conf)
+ an=br
+ 
+#Set number of haplotypes per split (If imputation fails due to memory usage, try to set to a lower value)
+ spliha_n=7000
+ 
+#Default population that will be used for HWE and strand checks. Change based on results of ancestry analysis
+ pop="eur"
 
 #Give path of Illumina SNP ID to rs-id conversion table. Illumina provides these in the 
 #Go to the kit support page for the array, click downloads, then click ArrayNameHere support files
 #the file should be under the name of "ArrayNameHere Loci Name to rsID Conversion File"
- illumina_snplist=starting_data/PsychArray-B-auxiliary-file.txt
+
+# illumina_snplist=starting_data/PsychArray-B-auxiliary-file.txt
+illumina_snplist=starting_data/InfiniumOmniExpressExome-8v1-3_A_b138_rsids.txt
 
 ###Ancestry determination steps
 
 #Execute from base directory with folder 
 cd $WORKING_DIR
 
-
 #starting_data that has the initial genotype data, Illumina marker annotations, phenotype and gender information
 
 #Use Illumina supplied list of SNPs that can be renamed
+
+ echo "Creating loci name conversion file"
  Rscript --vanilla scripts/make_rsid_update_file_v1_may5_2016.R "$illumina_snplist"
 
  rsidfile="$WORKING_DIR"/"$illumina_snplist"_nodot_first
 
+
 ## Call subject ancestries. 
+ echo "Calling ancestry"
  chmod u+rwx scripts/call_ancestry_v2_may6_2016.sh
  scripts/call_ancestry_v2_may6_2016.sh $plink_location $bfile $rsidfile $bfile_directory $snpweights_snplist $snpweights_path $snpweightfile_path $eigensoft_loc
 
@@ -110,21 +123,24 @@ cd $WORKING_DIR
  cat temporary_files/"$bfile"_anc_*.predpc_oneweek  > ancestry/"$bfile".predpc_oneweek
 
 #Call into the ancestry folder, classify subject ancestry, produce an ancestry PC plot
+ echo "Plotting ancestry"
  cd "$WORKING_DIR"/ancestry 
  Rscript --vanilla "$WORKING_DIR"/scripts/ancestry_plots_v3_jun17_2016.R "$bfile".predpc_oneweek "$snpweight_clustercenters"
 
 ### Preimputation QC
 
 #call back into base dir
-cd "$WORKING_DIR"
-
+ cd "$WORKING_DIR"
 
 #Makes a copy of the data into the base directory. Update the phenotype and sex of all subjects at this point if necessary.
 #If that is not necessary, remove --update-sex "$gender_filepath" --pheno "$phenotype_filepath" from this command!
- $plink_location --bfile "$bfile_directory"/"$bfile" --make-bed --out "$abbr"
- 
+
+ echo "Updating phenotype information (if necessary)"
+ $plink_location --bfile "$bfile_directory"/"$bfile" --make-bed --out "$abbr" --pheno ./SNPweights2.1/MIREptsd_pheno.txt
+
 
 #Guess the platform of the data
+ echo "Platform guess"
  plague_2 "$abbr" > "$abbr".plague
 
 #Write the platform name to a text file
@@ -136,40 +152,49 @@ cd "$WORKING_DIR"
 #Rename PLINK input files and subjects according to disease status/study name/ancestry/analyst/platform
 
 #Create a new family ID file with updated names
+ echo "Creating subject names"
  id_tager_2 --create --nn "$dis"_"$abbr"_"mix"_"$an"_"$platform"  --cn "$dis"_"$abbr"_"mix"_"$an" "$abbr".fam
  
 
 #Now I have the IDs that will be used. Make file for PLINK of IDs to keep using this, the ancestry determination, and IBD info.
 
 #Run IBD to get a list of related subjects to remove
+ echo "Performing IBD"
  $plink_location --bfile "$bfile_directory"/"$bfile" --maf 0.05 --geno 0.02 --mind 0.02 --indep-pairwise 50 5 0.2 --out temporary_files/"$bfile"_ibd
  $plink_location --bfile "$bfile_directory"/"$bfile" --mind 0.02 --extract  temporary_files/"$bfile"_ibd.prune.in --genome --min 0.2 --out  temporary_files/"$bfile"_ibd
  awk '{if(NR ==1) print "FID","IID"; else print $3,$4}' temporary_files/"$bfile"_ibd.genome > temporary_files/"$bfile"_ibd.remove
 
-#To the user: Examine the ancestry files (i.e. in the ancestry folder, the file with suffix _ancestries_samplesizes.txt) 
+#TO USER: Examine the ancestry files (i.e. in the ancestry folder, the file with suffix _ancestries_samplesizes.txt) 
 #and find the largest homogenous ancestry group. If N < 200, take largest two-way admixed group.
 #This list of subjects will be used for certain QC steps and strand alignment steps!!
 
-#Write down the population name here. Can be one of either: 
+#Write down the population name here (first uncomment, or code in at the start of the script). Can be one of either: 
 #eur (european), csa (central-south asian), eas (east asian), aam (African American), 
 #lat (latino), nat (Native American/Alaska Native), pue (Puerto Rican -like), oce (Oceanian), fil (filipino -like)
- pop="eur"
+# pop="eur"
  
 #This script will take your designated population and filter out related subjects
+ echo "Creating a list of unrelated subjects"
  Rscript --vanilla scripts/make_hwe_file_v1_may5_2016.R qc/"$dis"_"$abbr"_mix_"$an".fam ancestry/"$bfile".predpc_oneweek_ancestries.txt "$pop" temporary_files/"$bfile"_ibd.remove
  
 #Make sure the file listing unrelateds of a given ancestry actually exists (If this returns an error instead of giving you a file header, something has gone wrong)
+ nsubspop=$(wc -l "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects | awk '{print $1}')
+ echo "Created a file of $nsubpop subjects from $pop ancestry. These will be used for HWE and strand check. Sample of file header:"
  head "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects
+ 
 
 #Run the pre-imputation QC step, noting that by default hwe will not be done in cases (This is at the discretion of the user,  i.e. if the analysis only includes cases,then this default does not make sense)
+ echo "Running genotype QC"
  cd "$WORKING_DIR"/qc
  rep_qc2_14  --mind 0.02 --geno 0.02 --maf 0 --midi 0.02 --pre_geno 0.05 --imend 10000 --lmend 4 --Fhet_th 0.2 --hwe_th_co 1e-06 --hwe_th_ca 1.0e-300 --withpna 0 --sexmin 10 --keep "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects "$dis"_"$abbr"_"mix"_"$an" > preimputation_qc.log
 
 
-#User: Check the QC report that the pre-imputation step generated, make sure it's acceptable before proceeding to imputation
-
-cd $WORKING_DIR
+#TO USER: Check the QC report that the pre-imputation step generated, make sure it's acceptable before proceeding to imputation
+ cd $WORKING_DIR
+ 
+ 
 #For samples that passed QC, list all subjects within a given ancestry group 
+ echo "Subject ancestries and case/control counts"
  Rscript --vanilla scripts/make_ancestries_files_v2_may20_2016.R qc/"$dis"_"$abbr"_mix_"$an"-qc.fam ancestry/"$bfile".predpc_oneweek_ancestries.txt  
 
 
@@ -186,6 +211,7 @@ cd $WORKING_DIR
  mkdir id_updates
 
 #Get missingness per marker
+ echo "Getting missingness, updating rs-id names from loci names"
  $plink_location --bfile "$WORKING_DIR"/qc/"$dis"_"$abbr"_mix_"$an"-qc --missing --out id_updates/"$dis"_"$abbr"_mix_"$an"-qc_tmp1
 
 #Make rs-id name update file 
@@ -195,7 +221,7 @@ cd $WORKING_DIR
  $plink_location --bfile "$WORKING_DIR"/qc/"$dis"_"$abbr"_mix_"$an"-qc  --update-name "$WORKING_DIR"/qc/"$dis"_"$abbr"_mix_"$an"-qc.bim_allele_update --make-bed --out "$dis"_"$abbr"_mix_"$an"-qc 
  
 #Make a folder to store imputation step data
- mkdir "$WORKING_DIR"/qc/imputation/pi_sub
+# mkdir "$WORKING_DIR"/qc/imputation/pi_sub
  cd "$WORKING_DIR"/qc/imputation/pi_sub 
 
 #Need to make links to the QCed data
@@ -203,32 +229,39 @@ cd $WORKING_DIR
  ln -s "$WORKING_DIR"/qc/imputation/"$dis"_"$abbr"_mix_"$an"-qc.bed "$WORKING_DIR"/qc/imputation/pi_sub/"$dis"_"$abbr"_mix_"$an"-qc.bed
  ln -s "$WORKING_DIR"/qc/imputation/"$dis"_"$abbr"_mix_"$an"-qc.fam "$WORKING_DIR"/qc/imputation/pi_sub/"$dis"_"$abbr"_mix_"$an"-qc.fam
 
-#Build guess and liftover 
+
+##Build guess and liftover 
+ echo "Build guess and liftover"
  buigue --lift19 "$dis"_"$abbr"_mix_"$an"-qc.bim
 
- 
 #Read reference - position and name extraction (calls on the sumfrq.population.gz files that are in the imputation refernece folder)
+ echo "Reading position reference info"
  for chrloc in {1..22} 
  do
   reffi="$refdir"/sumfrq."$refpopname"."$chrloc".gz
-  my.readref --chr $chrloc --ref $reffi "$WORKING_DIR"/qc/imputation/pi_sub/"$dis"_"$abbr"_mix_"$an"-qc.hg19.bim
+  my.readref --chr $chrloc --ref $reffi "$dis"_"$abbr"_mix_"$an"-qc.hg19.bim
  done
 
 #Read reference summary
- my.readref_sum "$WORKING_DIR"/qc/imputation/pi_sub/"$dis"_"$abbr"_mix_"$an"-qc.hg19.bim
+ echo "Summarizing reference info"
+ my.readref_sum "$dis"_"$abbr"_mix_"$an"-qc.hg19.bim
 
 #Position check
+ echo "Checking marker positions relative to reference"
  checkpos6 --dbcol 1,2,3 --dbsnp "$WORKING_DIR"/qc/imputation/pi_sub/"$dis"_"$abbr"_mix_"$an"-qc.hg19.bim.ref.sum "$dis"_"$abbr"_mix_"$an"-qc.hg19.bim
 
 #Allele flip check
+ echo "Checking marker strand relative to reference"
  checkflip4 --dbcol 0,3,4,5 --fth  0.15 --sfh 0.2 --keep  "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$pop".subjects --info "$WORKING_DIR"/qc/imputation/pi_sub/"$dis"_"$abbr"_mix_"$an"-qc.hg19.bim.ref.sum "$dis"_"$abbr"_mix_"$an"-qc.hg19.bim
 
 #Make short family file names
+ echo "Making abbreviated family file for phasing"
  awk '{print NR,NR,$3,$4,$5,$6}' "$dis"_"$abbr"_mix_"$an"-qc.hg19.fl.fam > "$dis"_"$abbr"_mix_"$an"-qc.hg19.fl.fam.n
  awk '{print NR,NR,$1,$2}' "$dis"_"$abbr"_mix_"$an"-qc.hg19.fl.fam > "$dis"_"$abbr"_mix_"$an"-qc.hg19.fl.fam.transl
   
 
 #Break data into 3mb chunks according to the infosum_pos file.
+ echo "Breaking data into 3mb chunks"
  mkdir "$WORKING_DIR"/qc/imputation/pi_sub/subfile
 
  for chunk in $(grep -v total $refdir/infosum_pos.nsnps | awk '{print $2}'  ) #Column 2 of the file is file namesThe final line of the file is just a total length, this shouldnt be here.
@@ -237,22 +270,22 @@ cd $WORKING_DIR
   my.chuck2 --out "$WORKING_DIR"/qc/imputation/pi_sub/subfile/plink."$dis"_"$abbr"_mix_"$an"-qc.hg19.fl.$chunknum --in "$dis"_"$abbr"_mix_"$an"-qc.hg19.fl --sfile "$refdir"/"$chunk" --empty "$WORKING_DIR"/qc/imputation/pi_sub/subfile/plink."$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum" 
  done
 
-#Prephase the data. Do with a cluster 
-
-#User: Set number of haplotypes per split (If imputation fails due to memory usage, try to set to a lower value)
- spliha_n=7000
-
-#Calculcate N subjects (This is N haplotypes / 2)
+ 
+#Calculcates N subjects (This is N haplotypes / 2)
  spliha_n_2=$(echo "" | awk -v spliha_n=$spliha_n '{print spliha_n / 2}')
 
-
+ 
 #This calculates how many file splits will exist...
+ 
  nsplit=$(wc -l "$dis"_"$abbr"_mix_"$an"-qc.hg19.fl.fam | awk -v spliha_n=$spliha_n '{print int(1 + $1 / spliha_n * 2)}') 
-
+ echo "$Based on user specified splitting rule of $spliha_n haplotypes per file, there will be $nsplit splits"
+ 
  mkdir "$WORKING_DIR"/qc/imputation/pi_sub/phased
 
  echo "" > "$WORKING_DIR"/qc/imputation/pi_sub/phasing_tasks.list
 
+ echo "Writing a list of phasing commands to "$WORKING_DIR"/qc/imputation/pi_sub/phasing_tasks.list"
+ 
  for chunk in $(grep -v total $refdir/infosum_pos.nsnps | awk '{print $2}'  ) #Column 2 of the file is file names. The final line of the file is just a total length, this shouldnt be here, and is grapped out
  do
   chunknum=$(echo $chunk | sed  's/.*\(chr[0-9]*_[0-9]*_[0-9]*\).*/\1/')
@@ -266,21 +299,27 @@ cd $WORKING_DIR
 
 #Calculate the number of jobs
  phasejobN=$(wc -l "$WORKING_DIR"/qc/imputation/pi_sub/phasing_tasks.list | awk '{print $1}' )
-
+ echo "Will perform $phasejobN genotype phasing jobs"
+ 
 #Write a job script
- echo '#!/bin/sh' > phasing_tasks.pbs
+ echo "Writing a list of phasing job script to be submitted to the job engine"
+ echo '#$ -S /bin/bash' > phasing_tasks.pbs
  echo " PHASEFILE="$WORKING_DIR"/qc/imputation/pi_sub/phasing_tasks.list " >> phasing_tasks.pbs
  echo ' PHASELINE=$(cat $PHASEFILE | head -n $SGE_TASK_ID | tail -n 1) ' >> phasing_tasks.pbs
  echo '$PHASELINE' >> phasing_tasks.pbs
 
 #Run the jobs as an array. If some of the jobs fail - After all running jobs are done, rerun the code from the point of making an empty file called 'phasing_tasks.list'
- qsub -t 1-$phasejobN phasing_tasks.pbs
+ echo "Submitting phasing jobs"
+ qsub -t 1-$phasejobN phasing_tasks.pbs > phase.jobs
 
-
+ phasejobs=$(cat phase.jobs)
+ echo "Phasing jobs have id $phasejobs . Wait for this to complete prior to running the following steps. Please verify that number of outputs is correct"
+ 
 ##Impute data
  mkdir "$WORKING_DIR"/qc/imputation/pi_sub/imp2
 
 #Make imputation task list
+ echo "Preparing imputation task list"
  echo "" > "$WORKING_DIR"/qc/imputation/pi_sub/impute_tasks.list
 
  for chunk in $(cat $refdir/infosum_pos.reffiles  )
@@ -294,30 +333,32 @@ cd $WORKING_DIR
   do
    if [  -f "$WORKING_DIR"/qc/imputation/pi_sub/phased/"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".haps.spli"$splitcount" ] && [ ! -f "$WORKING_DIR"/qc/imputation/pi_sub/imp2/"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".haps.spli"$splitcount".fini ]
     then
-     #echo "filefound"
      echo "my.imp2.3  --out "$WORKING_DIR"/qc/imputation/pi_sub/imp2/"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".haps.spli"$splitcount" --in "$WORKING_DIR"/qc/imputation/pi_sub/phased/"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".haps.spli"$splitcount" --refstart $refstart --refend $refend  --reffile "$refdir"/"$chunk"  --gema "$refdir"/genetic_map_"$chrnum"_combined_b37.txt " >> "$WORKING_DIR"/qc/imputation/pi_sub/impute_tasks.list
    fi
   done 
  done
 
-#Calculate the number of jobs
+##Calculate the number of jobs
  imputejobN=$(wc -l "$WORKING_DIR"/qc/imputation/pi_sub/impute_tasks.list | awk '{print $1}' )
-
-#Write a job script
- echo '#!/bin/sh' > impute_tasks.pbs
+ echo "will perform $imputejobN imputations"
+#
+##Write a job script
+ echo '#$ -S /bin/bash' > impute_tasks.pbs
  echo " IMPUTEFILE="$WORKING_DIR"/qc/imputation/pi_sub/impute_tasks.list " >> impute_tasks.pbs
  echo ' IMPUTELINE=$(cat $IMPUTEFILE | head -n $SGE_TASK_ID | tail -n 1) ' >> impute_tasks.pbs
  echo '$IMPUTELINE' >> impute_tasks.pbs
-
-#Run the jobs as an array. If some of the jobs fail, rerun from the point of making an empty file called 'phasing_tasks.list'
- qsub -t 1-$imputejobN impute_tasks.pbs
-
-
-
+#
+##Run the jobs as an array. If some of the jobs fail, rerun from the point of making an empty file called 'phasing_tasks.list'
+ echo "Submitting imputation jobs"
+ qsub -t 1-$imputejobN impute_tasks.pbs > impute.jobs
+ echo "Impute jobs have id $impute.jobs . Wait for this to complete prior to running the following steps. Please verify that number of outputs is correct"
+ 
+#Once these jobs are done
 #Convert to 2 column dosage format
  mkdir "$WORKING_DIR"/qc/imputation/pi_sub/dos2
 
- for chunk in $(cat $refdir/infosum_pos.reffiles | head -n1  ) 
+
+ for chunk in $(cat $refdir/infosum_pos.reffiles) 
  do
   chunknum=$(echo $chunk | sed  's/.*\(chr[0-9]*_[0-9]*_[0-9]*\).*/\1/')
   chrnumx=$(echo $chunk | sed  's/.*chr\([0-9]*\).*/\1/')
@@ -331,16 +372,13 @@ cd $WORKING_DIR
 
   if [  -f "$WORKING_DIR"/qc/imputation/pi_sub/imp2/"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".haps.spli"$splitcount".gz ] && [ ! -f "$WORKING_DIR"/qc/imputation/pi_sub/dos2/"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".fini2 ]
    then
-     #echo $splitcount
+     echo $splitcount
      haps2dos4 --outname dos_"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum" --outdir "$WORKING_DIR"/qc/imputation/pi_sub/dos2  --chr $chrnumx --fam "$WORKING_DIR"/qc/imputation/pi_sub/subfile/plink."$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".fam --bim "$WORKING_DIR"/qc/imputation/pi_sub/subfile/plink."$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".bim --haps2dos_p1p2 1 --nhaps $spliha_n_2 $puter_out_arr
      haps2dos4 --outname dos_"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum" --outdir "$WORKING_DIR"/qc/imputation/pi_sub/dos2  --chr $chrnumx --fam "$WORKING_DIR"/qc/imputation/pi_sub/subfile/plink."$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".fam --bim "$WORKING_DIR"/qc/imputation/pi_sub/subfile/plink."$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".bim --haps2dos_p1p2 2 --nhaps $spliha_n_2 $puter_out_arr
   fi
  done
 
-
-
-
-#Set minimum info, MAF, and probability (only applies to best guess) for SNP inclusion
+ 
  info_th=0
  freq_th=0
  bg_th=0.8
@@ -348,23 +386,24 @@ cd $WORKING_DIR
 #Make best guess genotypes
  mkdir "$WORKING_DIR"/qc/imputation/dasuqc1_"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl
 
- for chunk in $(cat $refdir/infosum_pos.reffiles | head -n1  ) 
+ for chunk in $(cat $refdir/infosum_pos.reffiles) 
  do
   chunknum=$(echo $chunk | sed  's/.*\(chr[0-9]*_[0-9]*_[0-9]*\).*/\1/')
 
    if [  -f "$WORKING_DIR"/qc/imputation/pi_sub/dos2/dos_"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".out.dosage.fini2 ] 
     then
-     #echo $splitcount
+     echo "splitcount is $splitcount"
      daner_bg3 --info_th $info_th --freq_th $freq_th --bg_th $bg_th --indir "$WORKING_DIR"/qc/imputation/pi_sub/dos2 --outdir "$WORKING_DIR"/qc/imputation/dasuqc1_"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl "$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum"
     fi
  done
+
 
 
 ############ Do PCA within ancestry groups
 cd "$WORKING_DIR"/qc
 mkdir pca
 cd pca
-for popg in eur # all #User: List all populations you will analyze here as a space delimited list
+for popg in aam eur # all #User: List all populations you will analyze here as a space delimited list
 do
  #Subset to subjects in ancestry group to be analyzed
  keep_command=""
@@ -372,25 +411,91 @@ do
   then
    keep_command="--keep "$WORKING_DIR"/ancestry/"$bfile".predpc_oneweek_ancestries.txt_"$popg"_classifications.subjects"
   fi
+
  $plink_location --bfile "$WORKING_DIR"/qc/"$dis"_"$abbr"_mix_"$an"-qc $keep_command --make-bed --out "$dis"_"$abbr"_mix_"$an"-qc-"$popg"
- pcaer_20 --out "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca  "$dis"_"$abbr"_mix_"$an"-qc-"$popg".bim --noproject
+ pcaer_20 --out "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca  "$dis"_"$abbr"_mix_"$an"-qc-"$popg".bim --noproject --serial
+
 done
 
-############ Do analysis
 
 cd "$WORKING_DIR"/qc/imputation/
-
-
-for popg in eur # all #List all populations you will analyze here
+echo ""
+echo " .... DO ANALYSIS ..."
+echo ""
+ 
+ 
+#Perform the assn. analysis
+ 
+#Give the analysis a name
+analysis_name="analysis1"
+#Note: please verify where the imputed files are stored. they may be in a slightly different folder
+ 
+ 
+for popg in aam eur
 do
- #Make a copy of the PCA covariate (Comment out after having done this once, otherwise you may get a file date error)
- cp "$WORKING_DIR"/qc/pca/"$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov ./
- #Use the QCed data phenotype, because currently a bug changes the dosage data phenotype from missing to controls
- awk '{print $1,$2,$6}' "$dis"_"$abbr"_mix_"$an"-qc.fam > "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno
- #Run analysis. User: Specify the PCA covariates you want to include (default 1,2,3,4,5)
- postimp_navi_18 --out "$abbr"_"$popg" --mds "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --pheno "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno --addout analysis_run2 --nocon --nohet 
-done
+     cd "$WORKING_DIR"/qc/imputation
+     echo "Making PCA covariate and phenotype file"
+#    Make a copy of the PCA covariate, change the delimiter to tab, remove the SOL column, retain PCs 1-5 only. This is set up for the output of pcaer_20, specifically.
+     awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$5,$6,$7,$8}' "$WORKING_DIR"/qc/pca/"$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov > "$WORKING_DIR"/qc/pca/"$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov.sub.mds
+#    Use the QCed data phenotype, because currently a bug changes the dosage data phenotype from missing to controls
+     awk '{print $1,$2,$6}' "$dis"_"$abbr"_mix_"$an"-qc.fam > "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno
+ 
+#    for gender in mf males females
+    for gender in mf
+    do
+     outdir="$WORKING_DIR"/qc/imputation/daner_"$abbr"_"$popg"_"$analysis_name"_"$gender"
+     findir="$WORKING_DIR"/qc/imputation/daner_"$abbr"_"$popg"_"$analysis_name"_"$gender"_disb
+     if [ ! -e $outdir ]; then mkdir $outdir; fi ;
+     if [ ! -e $findir ]; then mkdir $findir; fi ;
+ 
+ 
+     if [ $gender == "mf" ]; then genderflag="";fi;
+     if [ $gender == "males" ]; then genderflag="--males";fi;
+     if [ $gender == "females" ]; then genderflag="--females";fi;
+     echo "Doing analysis of $popg $gender by using flag: $genderflag"
 
+     for chunk in $(cat $refdir/infosum_pos.reffiles  )
+     do
+      chunknum=$(echo $chunk | sed  's/.*\(chr[0-9]*_[0-9]*_[0-9]*\).*/\1/')
 
+       if [  -f "$WORKING_DIR"/qc/imputation/dasuqc1_"$dis"_"$abbr"_mix_"$an"-qc.hg19.ch.fl/qc1/dos_"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum".out.dosage.gz ]
+        then
+#         danerdir_6 $genderflag --nosi --indir "$WORKING_DIR"/qc/imputation/dasuqc1_"$dis"_"$abbr"_mix_"$an"-qc.hg19.ch.fl/qc1 --pheno "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno --mds "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --outdir $outdir "$dis"_"$abbr"_mix_"$an"-qc.hg19.ch.fl."$chunknum"
+          danerdir_6 $genderflag --nosi --indir "$WORKING_DIR"/qc/imputation/dasuqc1_"$dis"_"$abbr"_mix_"$an"-qc.hg19.ch.fl/qc1 --pheno "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno --mds "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --outdir $outdir "$dis"_"$abbr"_mix_"$an"-qc.hg19.fl."$chunknum"
+        fi
+     done
+ 
+    #Make a list of all association files
+     ls $outdir | grep dan_"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl.chr*.assoc.dosage.ngt.gz  > "$popg"_"$analysis_name"_"$gender"_tbc.txt
 
+     outdir="$WORKING_DIR"/qc/imputation/daner_"$abbr"_"$popg"_"$analysis_name"_"$gender"
+     echo "outdir is: $outdir"
+     cd $outdir
+     ls dan_"$dis"_"$abbr"_mix_"$an"-qc.hg19.fl.chr*.assoc.dosage.ngt.gz  > ../"$popg"_"$analysis_name"_"$gender"_tbc.txt
+     cd ..
 
+     filecount=$(wc -l "$popg"_"$analysis_name"_"$gender"_tbc.txt | awk '{print $1}')
+     echo "Combining $filecount files. If this number is < 925, there is a problem"
+     files_to_combine=$(cat "$popg"_"$analysis_name"_"$gender"_tbc.txt | sed 's/\n/\ /g')
+ 
+    #Concatenate all association files
+     my.dameta_cat $outdir "$abbr"_"$popg"_"$analysis_name"_"$gender".gz $files_to_combine
+     cp "$outdir"/"$abbr"_"$popg"_"$analysis_name"_"$gender".gz  "$findir"/.
+ 
+     #Give a QQ plot (change input names
+     cd $findir
+     qqplot_5 --maf 0.01 --info 0.6 --title QQ-plot.maf01.info6 --cacohead -p 11 --out "$findir"/"$abbr"_"$popg"_"$analysis_name"_"$gender" --ceiling 12 "$abbr"_"$popg"_"$analysis_name"_"$gender".gz
+     topfilter --th 3 --outfile "$abbr"_"$popg"_"$analysis_name"_"$gender".p3.gz "$abbr"_"$popg"_"$analysis_name"_"$gender".gz
+     topfilter --th 4 --outfile "$abbr"_"$popg"_"$analysis_name"_"$gender".p4.gz "$abbr"_"$popg"_"$analysis_name"_"$gender".gz
+ 
+     lahunt_9 -pcol 11 --best 5 --c1 12,1 --out "$abbr"_"$popg"_"$analysis_name"_"$gender"_ngt "$abbr"_"$popg"_"$analysis_name"_"$gender".gz
+     lahunt_9 -pcol 11 --best 5 --c1 8,10 --out "$abbr"_"$popg"_"$analysis_name"_"$gender"_info "$abbr"_"$popg"_"$analysis_name"_"$gender".gz
+     lahunt_9 -pcol 11 --best 5 --c1 6,10,f --out "$abbr"_"$popg"_"$analysis_name"_"$gender"_frqa "$abbr"_"$popg"_"$analysis_name"_"$gender".gz
+     lahunt_9 -pcol 11 --best 5 --c1 7,10,f --out "$abbr"_"$popg"_"$analysis_name"_"$gender"_frqu "$abbr"_"$popg"_"$analysis_name"_"$gender".gz
+     lahunt_9 -pcol 11 --best 5 --c1 7,40,f --out "$abbr"_"$popg"_"$analysis_name"_"$gender"_frqulo "$abbr"_"$popg"_"$analysis_name"_"$gender".gz
+     lahunt_9 -pcol 11 --best 5 --c1 1,1 --out "$abbr"_"$popg"_"$analysis_name"_"$gender"_chr "$abbr"_"$popg"_"$analysis_name"_"$gender".gz
+ 
+     manhattan_p4 --lastp 0.001 --pth 0.001  --title Manhattan-Plot --sig-gwa --cols 2,11,1,3 --out "$abbr"_"$popg"_"$analysis_name"_"$gender" "$abbr"_"$popg"_"$analysis_name"_"$gender".p3.gz
+     manhattan_plot2 --maxy 32  --pth 0.001 --pgene 0.00000005 --lastp 0.001  --title Manhattan-Plot --sig-gwa --cols 2,11,1,3  --out "$abbr"_"$popg"_"$analysis_name"_"$gender".gz.nog "$abbr"_"$popg"_"$analysis_name"_"$gender".p3.gz
+    done
+done 
