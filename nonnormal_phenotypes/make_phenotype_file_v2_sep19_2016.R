@@ -1,5 +1,5 @@
-
 #Make a phenotype file that takes an input (investigator subjects names) phenotype and converts them to GWAS subject names
+#V2 - Sep 19, 2016 - Can make a covariate sheet as well
 #V1 - May 25, 2016 - Initial release
 
 #Get command list
@@ -7,9 +7,17 @@ args <- commandArgs(trailingOnly = TRUE)
 
 family_file <- args[1]
 pheno_file <- args[2]
-phenotype <- args[3]
+phenotypes <- args[3]
+cov <- args[4]
 
-output_file <- paste(pheno_file,".pheno_use",sep="")
+if(cov == 1)
+{
+ phenotypes <- strsplit(phenotypes,split=",")[[1]]
+ output_file <- paste(pheno_file,".covar_use",sep="")
+} else {
+
+ output_file <- paste(pheno_file,".pheno_use",sep="")
+}
 
 
  unlist_split <- function(x, ...)
@@ -24,9 +32,10 @@ output_file <- paste(pheno_file,".pheno_use",sep="")
   dat[,c("FID")] <- t(sapply(dat$FIDL,unlist_split,split="[/*]"))[,2]
 	 
   pheno <- read.table(pheno_file,header=T)
-
+  
   #Join on FID/IID with the * designations removed because that links the files
   dat_use <- merge(dat, pheno,by=c("FID","IID"),suffixes=c("","_dontuse"))
-  dat_exp <- dat_use[,c("FIDL","IID",phenotype)]
+
+  dat_exp <- dat_use[,c("FIDL","IID",phenotypes)]
 
   write.table(dat_exp,output_file,quote=F,row.names=F)
