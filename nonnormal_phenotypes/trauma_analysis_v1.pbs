@@ -1,0 +1,33 @@
+#!/bin/bash
+#This script is the job script for running the analysis. It takes an input file, and based on the array id, selects relevant code lines to run.
+#Right now it assumes that R and PLINK1 are loaded as modules (a la LISA and other cluster environments). If R and plink are installed, with requisite libraries,
+#then these can be commented out
+
+while getopts n:o: option
+do
+  case "${option}"
+    in
+      o) outputfile=${OPTARG};;
+      n) nodeuse=${OPTARG};;
+    esac
+done
+
+
+ #PBS -N trauma_gwas_"$outputfile"_"$PBS_ARRAYID"
+ 
+ module load plink
+ module load R
+
+ Rscript  Rserve.R
+ 
+ #Write the start and stop points of the file
+ jstart=$((($PBS_ARRAYID-1)*$nodeuse +1))
+ jstop=$(($PBS_ARRAYID*$nodeuse))
+
+ for j in $(seq -w $jstart 1 $jstop)
+ do
+  #Take jth line of PLINK command, execute it
+  sed -n "$j"p temporary_files/"$outputfile"_analyses.plink_commands | bash &
+ done
+ wait
+
