@@ -1,4 +1,5 @@
 ###GWAS using Rserve
+#V3 - Sep 25- 2016 - Job was being submitted too many times
 #V2 - Sep 20 - 2016 - Now set up to run as array jobs, compatible with LISA
 
 ##Pre-requisites (R packages)
@@ -86,11 +87,10 @@ done
  totjobs=$(( ($ncommands + $nodeuse - 1 ) / $nodeuse ))
  echo "Will run $ncommands commands over $totjobs jobs, assuming $nodeuse cores available per node with $nodesize cores"
 
-for i in  $(seq 1 1 $totjobs)
- do 
+
  echo "Submitting job"
  qsub  trauma_analysis_v1.pbs -e errandout/"$abbr"_"$phenotype"_"$file_name".e -o errandout/"$abbr"_"$phenotype"_"$file_name".o -t 1-$totjobs -d $WORKING_DIR -lnodes=1:cores$nodesize -V -lwalltime=03:00:00 -F "-n $nodeuse -o "$abbr"_"$phenotype""
-done
+
 
 
 
