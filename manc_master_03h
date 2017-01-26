@@ -1,14 +1,14 @@
 ###Ricopili Modified for Ancestry (MANC) master script
-
+#v3i - Jan 26, 2017 - Added archival script
 #V3h - Jul 06, 2016 - Association anaylsis phenotype now directly specified to prevent error
 #V3g - Jun 20, 2016 - pcs are no longer based on projection
 #V3f - Jun 17, 2016 - Ancestry .predpc files now exported with header
 #V3e - Jun 15, 2016 - Analyst initials and disease name no longer hard coded
 #V3d - Jun 15, 2016 - Include PCA and analysis steps
-#V3c - Jun 7,  2016 -  Updated annotations to be more clear. List of subjects of each ancestry after QC was not done corrected (showed pre-qc N)
-#V3b - Jun 6,  2016 -  Made some variable paths correct, changed location of IBD step
-#V2  - May 18, 2016 -  Removed 'failed' SNP filters
-#V1  - May 16, 2016 -  Initial release
+#V3c - Jun 7,  2016 - Updated annotations to be more clear. List of subjects of each ancestry after QC was not done corrected (showed pre-qc N)
+#V3b - Jun 6,  2016 - Made some variable paths correct, changed location of IBD step
+#V2  - May 18, 2016 - Removed 'failed' SNP filters
+#V1  - May 16, 2016 - Initial release
 
 #This file contains step by step commands for how to run Ricopili MANC
 #It is essentially the same as what you would do for Ricopili, but with some
@@ -209,6 +209,33 @@ do
  postimp_navi_18 --out "$abbr"_"$popg" --mds "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --pheno "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno --addout analysis_run2 --nocon --nohet 
 done
 
+############# Archive data
 
+studdir=MINV
+#Haplotypes
+ tar cvzf "$abbr"_ha_v1_oct6_2016.tgz "$studdir"/qc/imputation/pi_sub
+#Imputed genotypes
+ tar cvf "$abbr"_an_v1_oct6_2016.tar "$studdir"/qc/imputation/dasuqc1*/qc1 "$studdir"/qc/imputation/dasuqc1*/info
+#Imputed BG genotypes
+ tar cvfz "$abbr"_bg_v1_oct6_2016.tgz "$studdir"/qc/imputation/dasuqc1*/bgn
+#Association analysis results
+ tar cvf "$abbr"_rp_v1_oct6_2016.tar "$studdir"/qc/imputation/distribution
+#Basic QC, PCA
+ tar cvzf "$abbr"_qc_v1_oct6_2016.tgz "$studdir"  --exclude="$studdir"/qc/imputation/dasuqc1* --exclude="$studdir"/qc/imputation/dameta* --exclude="$studdir"/qc/imputation/daner* --exclude="$studdir"/qc/imputation/report* --exclude="$studdir"/qc/imputation/distribution --exclude="$studdir"/qc/imputation/pi_sub
+#Starting data only(minimal set, redundant with qc)
+ tar cvfz "$abbr"_sd_v1_oct6_2016.tgz "$studdir"/starting_data "$studdir"/scripts
+
+ tar tvzf "$abbr"_qc_v1_oct6_2016.tgz > tar_contents/"$abbr"_qc_v1_oct6_2016.txt
+ tar tvzf "$abbr"_ha_v1_oct6_2016.tgz > tar_contents/"$abbr"_ha_v1_oct6_2016.txt
+ tar tvf "$abbr"_an_v1_oct6_2016.tar > tar_contents/"$abbr"_an_v1_oct6_2016.txt
+ tar tvfz "$abbr"_bg_v1_oct6_2016.tgz > tar_contents/"$abbr"_bg_v1_oct6_2016.txt
+ tar tvfz "$abbr"_sd_v1_oct6_2016.tgz  > tar_contents/"$abbr"_sd_v1_oct6_2016.txt
+ tar tvf "$abbr"_rp_v1_oct6_2016.tar > tar_contents/"$abbr"_rp_v1_oct6_2016.txt
+ 
+ md5sum "$abbr"_*
+ 
+ cp "$abbr"_* /archive/maihofer/.
+ md5sum /archive/maihofer/"$abbr"_*
+ 
 
 
