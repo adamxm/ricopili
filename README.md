@@ -3,8 +3,9 @@ Adam Maihofer
 amaihofer@ucsd.edu
 
 Version History
+V3I - Jan 26, 2017 - Added code to zip up final data
 
-v3h - Jul 06, 2016 - Now use --pheno to declare phenotype in analysis step
+V3h - Jul 06, 2016 - Now use --pheno to declare phenotype in analysis step
 
 V3g - Jun 20, 2016 - pcs are no longer based on projection
 
