@@ -1,5 +1,7 @@
-Ricopili MANC Version 3e 
+Ricopili MANC 
+
 Adam Maihofer 
+
 amaihofer@ucsd.edu
 
 Version History
