@@ -1,0 +1,16 @@
+#Convert a genotype probability to a dosage file
+
+#Specify where probability format genotypes are stored
+probdir=/home/maihofer/vets/qc/imputation/dasuqc1_pts_vets_mix_am-qc.hg19.ch.fl/qc1
+
+#Specify where output will be stored 
+outdir=/home/maihofer/vets/qc/imputation/dasuqc1_pts_vets_mix_am-qc.hg19.ch.fl/qc1_dose
+
+#Get the number of subjects (assuming that it is the same across all files)
+nsub=$(wc -l "$probdir"/dos_pts_vets_mix_am-qc.hg19.ch.fl.chr1_234_237.out.dosage.fam  | awk '{print $1}')
+
+
+for file in $(ls $probdir | grep .gz$)
+do
+ zcat "$probdir"/"$file" | awk -v s=$nsub '{ printf $1 "," $2 "," $3; for(i=1; i<=s; i++) printf "," $(i*3+1)*2+$(i*3+2); printf "\n" }' > "$outdir"/"$file".doscnt
+done 
