@@ -1,4 +1,5 @@
 ###Ricopili Modified for Ancestry (MANC) master script
+#V3j - Feb 17, 2017 - Remove need for running the preimp_dir script twice
 #v3i - Jan 26, 2017 - Added archival script
 #V3h - Jul 06, 2016 - Association anaylsis phenotype now directly specified to prevent error
 #V3g - Jun 20, 2016 - pcs are no longer based on projection
@@ -118,8 +119,19 @@ cd "$WORKING_DIR"
 #If that is not necessary, remove --update-sex "$gender_filepath" --pheno "$phenotype_filepath" from this command!
  $plink_location --bfile "$bfile_directory"/"$bfile" --update-sex "$gender_filepath" --pheno "$phenotype_filepath" --make-bed --out "$abbr"
  
-#Run the first step of pre-imputation, which guesses the genotyping platform and gives subjects names
- preimp_dir_12_getids --dis "$dis" --popname mix --out "$abbr" 
+#Guess the platform of the data
+ echo "Platform guess"
+ plague_2 "$abbr" > "$abbr".plague
+
+#Write the platform name to a text file
+ Rscript scripts/plaguematch_v1.R "$abbr".plague
+
+#Assign the name to a variable
+ platform=$(awk '{print $1}' "$abbr".plague.platform)
+
+#Create a new family ID file with updated names (according to disease status/study name/ancestry/analyst/platform)
+ echo "Creating subject names"
+ id_tager_2 --create --nn "$dis"_"$abbr"_"mix"_"$an"_"$platform"  --cn "$dis"_"$abbr"_"mix"_"$an" "$abbr".fam
 
 #Now I have the IDs that will be used. Make file for PLINK of IDs to keep using this, the ancestry determination, and IBD info.
 
