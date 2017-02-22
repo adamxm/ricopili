@@ -23,6 +23,6 @@ done
  for j in $(seq -w $jstart 1 $jstop)
  do
   file_use=$(awk -v lineno=$j '{if(NR==lineno) print}' $outputfile)
-  zcat "$probdir"/"$file_use" | awk -v s=$nsub '{ printf $1 "," $2 "," $3; for(i=1; i<=s; i++) printf "," $(i*3+1)*2+$(i*3+2); printf "\n" }' | gzip > "$outdir"/"$file_use".doscnt.gz &
+  zcat "$probdir"/"$file_use" | awk -v s=$nsub '{ printf $1 "," $2 "," $3; for(i=1; i<=s; i++) printf "," $(i*2+1)*2+$(i*2+2); printf "\n" }' | gzip > "$outdir"/"$file_use".doscnt.gz &
  done
 wait
