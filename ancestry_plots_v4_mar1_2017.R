@@ -1,4 +1,5 @@
 #Call ancestry in all subjects, using R
+#V4 - Mar 01, 2017 - New African-American cutoff
 #V3 - Jun 17, 2016 - Export predpc file with header
 #V2 - May 31, 2016 - Made plots and outputs pretty
 #V1 - May 5 2016 - Initial release 
@@ -35,6 +36,7 @@
 		pue <-  (x[europe] >= 0.40 & x[oceania] < 0.05 & x[africa] >= 0.07 & x[americas] >= 0.05 & x[cs_asia] < 0.05 & x[e_asia] < 0.05)
 		oce <-  (x[oceania] >= 0.2)
 		fil <-  (x[europe] >= 0.4 & x[oceania] < 0.05 & x[africa] < 0.05 & x[americas] < 0.05  & x[cs_asia] < 0.05 & x[e_asia] >= 0.4 )
+		afr2 <- (x[europe] < 0.5 & x[oceania] < 0.05 & x[africa] >= 0.5 &  x[americas] < 0.05  & (x[cs_asia] + x[e_asia]) < 0.10 ) #New African-American addition , more lenient
 
 		if(eur)
 		{
@@ -47,7 +49,12 @@
 		if(aam) #defines african americans
 		{
 			popfit <- "aam"
-		}      
+		}  
+		if(!aam & afr2) #defines african americans
+		{
+			popfit <- "aam"
+		}  
+            
 		#if(afr) #defines africans
 		#{
 		#	popfit <- "afr"
@@ -78,7 +85,7 @@
 		}	
 	
 		#Others are defined as anyone not fitting into a specified group
-		other <- eur + aam + eas +    csa + max(nat,lat) + oce +fil + pue # max(afr,aam)
+		other <- eur + max(afr2,aam) + eas +    csa + max(nat,lat) + oce +fil + pue # max(afr,aam)
 			
 		if(other == 0)
 		{
