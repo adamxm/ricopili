@@ -107,7 +107,7 @@ cd $WORKING_DIR
 
 #Call into the ancestry folder, classify subject ancestry, produce an ancestry PC plot
  cd "$WORKING_DIR"/ancestry 
- Rscript --vanilla "$WORKING_DIR"/scripts/ancestry_plots_v3_jun17_2016.R "$bfile".predpc_oneweek "$snpweight_clustercenters"
+ Rscript --vanilla "$WORKING_DIR"/scripts/ancestry_plots_v4_mar1_2017.R "$bfile".predpc_oneweek "$snpweight_clustercenters"
 
 ### Preimputation QC
 
