@@ -116,6 +116,6 @@ totjobs=$(($job - 1))
 for i in  $(seq 1 1 $totjobs)
  do 
  echo "Submitting job"
- qsub temporary_files/ancjob"$i"_"$2".pbs
+ bash temporary_files/ancjob"$i"_"$2".pbs
 done
 
