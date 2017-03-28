@@ -24,6 +24,7 @@ however certain hacks made for huge samples (i.e. running 1 job at a time on an 
 The ancestry method contained here assumes that the user is working on a TORQUE computing cluster. I can provide a version of the scripts that does not require a cluster if there is demand for it.
 
 Version History  
+V3K - Mar 28, 2017 - Added sex specific analysis  
 V3J - Feb 17, 2017 - Remove need to run preimp_dir just to get ids  
 V3I - Jan 26, 2017 - Added code to zip up final data  
 V3h - Jul 06, 2016 - Now use --pheno to declare phenotype in analysis step  
