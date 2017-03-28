@@ -1,4 +1,5 @@
 ###Ricopili Modified for Ancestry (MANC) master script
+#V3K - Mar 28, 2017 - Sex specific analyses
 #V3j - Feb 17, 2017 - Remove need for running the preimp_dir script twice
 #v3i - Jan 26, 2017 - Added archival script
 #V3h - Jul 06, 2016 - Association anaylsis phenotype now directly specified to prevent error
@@ -219,6 +220,9 @@ do
  awk '{print $1,$2,$6}' "$dis"_"$abbr"_mix_"$an"-qc.fam > "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno
  #Run analysis. User: Specify the PCA covariates you want to include (default 1,2,3,4,5)
  postimp_navi_18 --out "$abbr"_"$popg" --mds "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --pheno "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno --addout analysis_run2 --nocon --nohet 
+ postimp_navi_18 --out "$abbr"_"$popg" --mds "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --pheno "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno --males --addout analysis_run2_males --nocon --nohet 
+ postimp_navi_18 --out "$abbr"_"$popg" --mds "$dis"_"$abbr"_mix_"$an"-qc-"$popg"_pca.menv.mds_cov --coco 1,2,3,4,5 --pheno "$dis"_"$abbr"_mix_"$an"-qc-"$popg".pheno --females --addout analysis_run2_females --nocon --nohet 
+ 
 done
 
 ############# Archive data
