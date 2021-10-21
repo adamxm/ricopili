@@ -1,4 +1,4 @@
-Ricopili MANC V3J
+Ricopili MANC V3L
 
 Adam Maihofer  
 amaihofer@ucsd.edu  
@@ -8,7 +8,7 @@ The user should download the ricopili files in rp_bin, then follow the instructi
 https://sites.google.com/a/broadinstitute.org/ricopili/home 
 to install this version of ricopili (note: use the scripts from this github page, not from the ricopili website!)
 
-Download all scripts in the base directory as well, and follow guidelines in manc_master_01 to run the pipeline
+Download all scripts in the base directory as well, and follow guidelines in 00_manc.sh to run the pipeline
 
 Addtl. notes:  
 The method requires some additional files that need to be downloaded:  
