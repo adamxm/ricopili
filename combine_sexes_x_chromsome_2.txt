@@ -13,7 +13,7 @@ WORKING_DIR=~/dac/pts/wave3/v1/
 cd $WORKING_DIR 
 
 
-for abbr in ehvp psy5 # $(ls | grep -v reference_info)
+for abbr in rcs2 # $(ls | grep -v reference_info)
 do
  cd "$WORKING_DIR"/"$abbr"/qc1 
  echo Working on $abbr in "$WORKING_DIR"/"$abbr"/qc1 
